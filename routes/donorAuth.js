@@ -3,7 +3,7 @@ const router = express.Router();
 const Donor = require("../models/Donor");
 const bcrypt = require("bcryptjs");
 
-router.post("/login", async (req, res) => {
+router.post("/donorsignup", async (req, res) => {
   const { email, password } = req.body;
 
   try {

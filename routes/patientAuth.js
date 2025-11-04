@@ -3,7 +3,7 @@ const router = express.Router();
 const Patient = require("../models/Patient");
 const bcrypt = require("bcryptjs");
 
-router.post("/login", async (req, res) => {
+router.post("/patientsignup", async (req, res) => {
   const { email, password } = req.body;
 
   try {
@@ -19,4 +19,4 @@ router.post("/login", async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = Patient;
