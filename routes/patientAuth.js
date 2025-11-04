@@ -19,4 +19,4 @@ router.post("/patientsignup", async (req, res) => {
   }
 });
 
-module.exports = Patient;
+module.exports = router;
