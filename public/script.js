@@ -102,6 +102,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    const useLocationBtn = document.getElementById('useLocationBtn');
+    if (useLocationBtn) {
+        useLocationBtn.addEventListener('click', () => {
+            // This reuses the same logic as the main search button
+            searchHospitalsBtn.click();
+        });
+    }
     
     // A simple (and incomplete) mapping for districts. A real app would use a library or API.
     const districtsByState = {

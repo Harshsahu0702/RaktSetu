@@ -80,7 +80,7 @@
     </nav>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" x-data="{ showLocationModal: false }">
         <h1 class="text-3xl font-bold text-gray-900 mb-6">Dashboard</h1>
 
         <!-- Blood Stock Overview -->
@@ -110,7 +110,19 @@
                 </div>
                 <div>
                     <p class="text-sm font-medium text-gray-500">Coordinates</p>
-                    <p class="text-gray-800"><%= user.location.coordinates[1] %>, <%= user.location.coordinates[0] %></p>
+                    <div class="flex items-center gap-4">
+                        <% if (user.location && user.location.coordinates && user.location.coordinates.length === 2) { %>
+                            <p class="text-gray-800"><%= user.location.coordinates[1] %>, <%= user.location.coordinates[0] %></p>
+                        <% } else { %>
+                            <p class="text-gray-800">Not set</p>
+                        <% } %>
+                        
+                        <% if (user.locationUpdateAttempts === undefined || user.locationUpdateAttempts > 0) { %>
+                        <button @click="showLocationModal = true" class="bg-blue-500 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-600">
+                            <%= (user.location && user.location.coordinates && user.location.coordinates.length === 2) ? 'Update Location' : 'Set Location' %>
+                        </button>
+                        <% } %>
+                    </div>
                 </div>
             </div>
         </div>
@@ -135,6 +147,33 @@
             </form>
         </div>
 >>>>>>> Stashed changes
+        <!-- Location Modal -->
+        <div x-show="showLocationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none;">
+            <div @click.away="showLocationModal = false" class="relative mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3 text-center">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Set Hospital Location</h3>
+                    <div class="mt-2 px-7 py-3">
+                        <p class="text-sm text-gray-500">
+                            Click the button below to use your device's current location. You have <%= user.locationUpdateAttempts === undefined ? 3 : user.locationUpdateAttempts %> attempts remaining.
+                        </p>
+                        <div id="location-info" class="mt-4 text-gray-700"></div>
+                    </div>
+                    <div class="items-center px-4 py-3">
+                        <button id="getLocationBtn" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                            Get Live Location
+                        </button>
+                        <button id="saveLocationBtn" class="mt-2 px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300" style="display: none;">
+                            Save Location
+                        </button>
+                    </div>
+                    <div class="items-center px-4 py-3">
+                        <button @click="showLocationModal = false" class="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script>
@@ -180,7 +219,59 @@
                 }
             }
         }
+
+        let currentCoordinates = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const getLocationBtn = document.getElementById('getLocationBtn');
+            const saveLocationBtn = document.getElementById('saveLocationBtn');
+            const locationInfo = document.getElementById('location-info');
+
+            if(getLocationBtn) {
+                getLocationBtn.addEventListener('click', () => {
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(position => {
+                            const lat = position.coords.latitude;
+                            const lon = position.coords.longitude;
+                            currentCoordinates = [lon, lat];
+                            locationInfo.innerHTML = `Latitude: ${lat.toFixed(4)}, Longitude: ${lon.toFixed(4)}`;
+                            if(saveLocationBtn) saveLocationBtn.style.display = 'block';
+                        }, error => {
+                            alert(`Error: ${error.message}`);
+                        });
+                    } else {
+                        alert('Geolocation is not supported by this browser.');
+                    }
+                });
+            }
+
+            if(saveLocationBtn) {
+                saveLocationBtn.addEventListener('click', async () => {
+                    if (!currentCoordinates) {
+                        alert('No location data to save.');
+                        return;
+                    }
+                    const hospitalId = '<%= user._id %>';
+                    try {
+                        const response = await fetch(`/api/hospital/location/${hospitalId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ coordinates: currentCoordinates })
+                        });
+                        if (response.ok) {
+                            alert('Location updated successfully!');
+                            location.reload();
+                        } else {
+                            const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred.' }));
+                            alert(`Failed to update location: ${errorData.message}`);
+                        }
+                    } catch (error) {
+                        console.error('Error updating location:', error);
+                        alert('An error occurred while updating location.');
+                    }
+                });
+            }
+        });
     </script>
-    </main>
 </body>
 </html>

@@ -96,13 +96,12 @@ const hospitalSchema = new mongoose.Schema({
     type: {
       type: String,
       enum: ['Point'],
-      required: true
     },
     coordinates: {
       type: [Number],
-      required: true
     }
   },
+  locationUpdateAttempts: { type: Number, default: 3 },
   bloodStock: {
     'A+': { type: Number, default: 0 },
     'A-': { type: Number, default: 0 },
@@ -272,17 +271,6 @@ app.post("/api/hospital/signup", async (req, res) => {
         const existing = await Hospital.findOne({ email });
         if (existing) return res.status(400).send("Hospital already exists.");
 
-        // Geocode the address
-        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
-        const geocodeResponse = await fetch(geocodeUrl);
-        const geocodeData = await geocodeResponse.json();
-
-        if (geocodeData.status !== 'OK' || !geocodeData.results[0]) {
-            return res.status(400).send("Invalid address or unable to geocode.");
-        }
-
-        const location = geocodeData.results[0].geometry.location;
-
         const hashedPassword = await bcrypt.hash(password, 10);
         const newHospital = new Hospital({
             hospitalName,
@@ -294,10 +282,7 @@ app.post("/api/hospital/signup", async (req, res) => {
             contactInfo,
             fullName,
             role: 'hospital',
-            location: {
-                type: 'Point',
-                coordinates: [location.lng, location.lat]
-            }
+            locationUpdateAttempts: 3
         });
 
         await newHospital.save();
@@ -523,6 +508,38 @@ app.post('/api/stock/update/:hospitalId', async (req, res) => {
         res.json(updatedHospital.bloodStock);
     } catch (err) {
         console.error("❌ Stock update error:", err);
+        res.status(500).send("Server error");
+    }
+});
+
+app.post('/api/hospital/location/:hospitalId', async (req, res) => {
+    try {
+        const { hospitalId } = req.params;
+        const { coordinates } = req.body;
+
+        const hospital = await Hospital.findById(hospitalId);
+        if (!hospital) {
+            return res.status(404).send("Hospital not found.");
+        }
+
+        if (hospital.locationUpdateAttempts <= 0) {
+            return res.status(403).json({ message: "No location update attempts remaining." });
+        }
+
+        hospital.location = {
+            type: 'Point',
+            coordinates: coordinates
+        };
+        hospital.locationUpdateAttempts -= 1;
+
+        await hospital.save();
+
+        res.status(200).json({ 
+            message: "Location updated successfully.", 
+            remainingAttempts: hospital.locationUpdateAttempts 
+        });
+    } catch (err) {
+        console.error("❌ Location update error:", err);
         res.status(500).send("Server error");
     }
 });
