@@ -45,6 +45,7 @@
     </style>
 </head>
 <body class="min-h-screen">
+    <% var _user = (typeof user !== 'undefined') ? user : { fullName: 'Donor', _id: '', bloodGroup: '', city: '', contactInfo: '' }; %>
     <!-- Navigation -->
     <nav class="bg-white shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -63,14 +64,14 @@
                 <div class="hidden md:ml-4 md:flex-shrink-0 md:flex md:items-center">
                     <div class="relative" x-data="{ open: false }">
                         <button @click="open = !open" class="flex items-center max-w-xs rounded-full focus:outline-none">
-                            <img class="h-8 w-8 rounded-full" src="https://ui-avatars.com/api/?name=<%= user.fullName %>&background=ef4444&color=fff" alt="User profile">
-                            <span class="ml-2 text-sm font-medium text-gray-700"><%= user.fullName %></span>
+                            <img class="h-8 w-8 rounded-full" src="https://ui-avatars.com/api/?name=<%= _user.fullName %>&background=ef4444&color=fff" alt="User profile">
+                            <span class="ml-2 text-sm font-medium text-gray-700"><%= _user.fullName %></span>
                             <i class="fas fa-chevron-down ml-1 text-gray-500 text-xs"></i>
                         </button>
                         <div x-show="open" @click.away="open = false" class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
                             <div class="py-1">
                                 <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your Profile</a>
-                                <a href="#" onclick="deleteAccount('<%= user._id %>')" class="block px-4 py-2 text-sm text-red-700 hover:bg-gray-100">Delete Account</a>
+                                <a href="#" onclick="deleteAccount('<%= _user._id %>')" class="block px-4 py-2 text-sm text-red-700 hover:bg-gray-100">Delete Account</a>
                                 <a href="/get-started" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</a>
                             </div>
                         </div>
@@ -84,7 +85,7 @@
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <!-- Welcome Banner -->
         <div class="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-6 text-white mb-8">
-            <h2 class="text-2xl font-bold mb-1">Welcome, <%= username %>!</h2>
+            <h2 class="text-2xl font-bold mb-1">Welcome, <%= _user.fullName %>!</h2>
             <p class="text-red-100">Thank you for being a lifesaver. Manage your donations and availability here.</p>
         </div>
 
@@ -94,9 +95,9 @@
                 <div class="glass-card rounded-xl p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Your Profile</h3>
                     <div class="space-y-3">
-                        <p class="text-sm text-gray-600"><i class="fas fa-tint w-4 mr-2 text-red-500"></i>Blood Group: <span class="font-medium text-gray-800">O+</span></p>
-                        <p class="text-sm text-gray-600"><i class="fas fa-map-marker-alt w-4 mr-2 text-red-500"></i>City: <span class="font-medium text-gray-800">Mumbai</span></p>
-                        <p class="text-sm text-gray-600"><i class="fas fa-phone w-4 mr-2 text-red-500"></i>Contact: <span class="font-medium text-gray-800">+91 1234567890</span></p>
+                        <p class="text-sm text-gray-600"><i class="fas fa-tint w-4 mr-2 text-red-500"></i>Blood Group: <span class="font-medium text-gray-800"><%= _user.bloodGroup %></span></p>
+                        <p class="text-sm text-gray-600"><i class="fas fa-map-marker-alt w-4 mr-2 text-red-500"></i>City: <span class="font-medium text-gray-800"><%= _user.city %></span></p>
+                        <p class="text-sm text-gray-600"><i class="fas fa-phone w-4 mr-2 text-red-500"></i>Contact: <span class="font-medium text-gray-800"><%= _user.contactInfo %></span></p>
                     </div>
                     <button class="mt-4 w-full text-sm text-red-600 hover:text-red-700 font-medium focus:outline-none">Edit Profile</button>
                 </div>
@@ -123,14 +124,14 @@
                         <div class="flex justify-between items-start">
                             <div>
                                 <p class="text-xs opacity-80">Blood Donor Card</p>
-                                <p class="font-bold text-lg"><%= username %></p>
+                                <p class="font-bold text-lg"><%= _user.fullName %></p>
                             </div>
                             <i class="fas fa-tint text-2xl"></i>
                         </div>
                         <div class="flex items-end justify-between mt-4">
                             <div class="text-center">
                                 <p class="text-xs opacity-80">Blood Group</p>
-                                <p class="font-bold text-2xl">O+</p>
+                                <p class="font-bold text-2xl"><%= _user.bloodGroup %></p>
                             </div>
                             <div id="qrcode" class="w-16 h-16 bg-white p-1 rounded-md"></div>
                         </div>
@@ -150,9 +151,9 @@
         document.addEventListener('DOMContentLoaded', function () {
             // In a real app, this data would come from the server
             const donorData = {
-                id: "<%= user._id %>",
-                name: "<%= user.fullName %>",
-                bloodGroup: "<%= user.bloodGroup %>"
+                id: "<%= _user._id %>",
+                name: "<%= _user.fullName %>",
+                bloodGroup: "<%= _user.bloodGroup %>"
             };
             
             const qr = qrcode(0, 'L');
