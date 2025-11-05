@@ -125,22 +125,11 @@ const adminSchema = new mongoose.Schema({
 // Blood Request Schema
 const bloodRequestSchema = new mongoose.Schema({
   patient: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
+  hospital: { type: mongoose.Schema.Types.ObjectId, ref: 'Hospital', required: true },
   bloodGroup: { type: String, required: true },
-  city: { type: String, required: true },
+  units: { type: Number, required: true },
   status: { type: String, enum: ['pending', 'approved', 'rejected', 'delivering', 'completed'], default: 'pending' },
-  requestType: { type: String, enum: ['normal', 'urgent'], default: 'normal' },
-  createdAt: { type: Date, default: Date.now },
-  location: {
-    type: {
-      type: String,
-      enum: ['Point'],
-      required: true
-    },
-    coordinates: {
-      type: [Number],
-      required: true
-    }
-  }
+  createdAt: { type: Date, default: Date.now }
 });
 
 // Donation Application Schema
@@ -216,7 +205,7 @@ app.post("/api/patient/signup", async (req, res) => {
 
         await newPatient.save();
         console.log(`✅ New Patient registered: ${newPatient.email}`);
-        res.render("patient", { username: newPatient.fullName });
+        res.render("patient", { user: newPatient });
     } catch (err) {
         console.error("❌ Patient signup error:", err);
         res.status(500).send("Server error");
@@ -231,9 +220,9 @@ app.post("/api/donor/signup", async (req, res) => {
         if (!fullName || !email || !password || !bloodGroup || !city || !contactInfo)
             return res.status(400).send("All fields are required.");
 
-        if (password !== confirmPassword)
-            return res.status(400).send("Passwords do not match.");
-
+                    await newPatient.save();
+                    console.log(`✅ New Patient registered: ${newPatient.email}`);
+                    res.render("patient", { user: newPatient });
         const existing = await Donor.findOne({ email });
         if (existing) return res.status(400).send("Donor already exists.");
 
@@ -250,7 +239,7 @@ app.post("/api/donor/signup", async (req, res) => {
 
         await newDonor.save();
         console.log(`✅ New Donor registered: ${newDonor.email}`);
-        res.render("donor", { username: newDonor.fullName });
+        res.render("donor", { user: newDonor });
     } catch (err) {
         console.error("❌ Donor signup error:", err);
         res.status(500).send("Server error");
@@ -301,9 +290,9 @@ app.post("/api/admin/signup", async (req, res) => {
         if (password !== confirmPassword) return res.status(400).send("Passwords do not match.");
         
         const existing = await Admin.findOne({ email });
-        if (existing) return res.status(400).send("Admin already exists.");
-
-        const hashedPassword = await bcrypt.hash(password, 10);
+                    await newDonor.save();
+                    console.log(`✅ New Donor registered: ${newDonor.email}`);
+                    res.render("donor", { user: newDonor });
         const newAdmin = new Admin({
             fullName,
             email,
@@ -351,6 +340,36 @@ app.post('/api/hospitals/search', async (req, res) => {
         res.json(hospitals);
     } catch (err) {
         console.error("❌ Hospital search error:", err);
+        res.status(500).send("Server error");
+    }
+});
+
+// Patient sends a request to a specific hospital
+app.post('/api/request/hospital', async (req, res) => {
+    try {
+        const { patientId, hospitalId, bloodGroup, units } = req.body;
+
+        if (!patientId || !hospitalId || !bloodGroup || !units) {
+            return res.status(400).send("Missing required fields for blood request.");
+        }
+
+        const newRequest = new BloodRequest({
+            patient: patientId,
+            hospital: hospitalId,
+            bloodGroup,
+            units,
+            status: 'pending'
+        });
+
+        await newRequest.save();
+
+        // Link the request to the patient
+        await Patient.findByIdAndUpdate(patientId, { $push: { requests: newRequest._id } });
+
+        console.log(`✅ New blood request created: ${newRequest._id} from patient ${patientId} to hospital ${hospitalId}`);
+        res.status(201).json(newRequest);
+    } catch (err) {
+        console.error("❌ Hospital blood request error:", err);
         res.status(500).send("Server error");
     }
 });
@@ -472,25 +491,43 @@ const notifyDonorsAndHospitals = async (bloodRequest) => {
 // -------------------------
 app.get('/api/requests/hospital/:hospitalId', async (req, res) => {
     try {
-        const hospital = await Hospital.findById(req.params.hospitalId);
-        if (!hospital) {
-            return res.status(404).send("Hospital not found");
-        }
-        // Find pending requests in the same city as the hospital
-        const requests = await BloodRequest.find({ status: 'pending', city: hospital.city }).populate('patient', 'fullName bloodGroup');
+        const { hospitalId } = req.params;
+        const requests = await BloodRequest.find({ hospital: hospitalId })
+            .populate('patient', 'fullName bloodGroup')
+            .sort({ createdAt: -1 });
         res.json(requests);
     } catch (err) {
-        console.error("❌ Fetching requests error:", err);
+        console.error("❌ Fetching hospital requests error:", err);
         res.status(500).send("Server error");
     }
 });
 
 app.post('/api/requests/update/:requestId', async (req, res) => {
     try {
-        const { status } = req.body; // 'approved' or 'rejected'
+        const { status } = req.body; // 'approved', 'rejected', or 'delivering'
         const { requestId } = req.params;
-        const updatedRequest = await BloodRequest.findByIdAndUpdate(requestId, { status }, { new: true });
-        res.json(updatedRequest);
+
+        const request = await BloodRequest.findById(requestId);
+        if (!request) {
+            return res.status(404).send("Request not found.");
+        }
+
+        // If the request is approved, decrease the hospital's blood stock
+        if (status === 'approved' && request.status === 'pending') {
+            const hospital = await Hospital.findById(request.hospital);
+            if (hospital.bloodStock[request.bloodGroup] >= request.units) {
+                hospital.bloodStock[request.bloodGroup] -= request.units;
+                await hospital.save();
+            } else {
+                return res.status(400).send("Not enough blood stock to approve this request.");
+            }
+        }
+
+        request.status = status;
+        await request.save();
+        
+        console.log(`✅ Request ${requestId} status updated to ${status}`);
+        res.json(request);
     } catch (err) {
         console.error("❌ Request update error:", err);
         res.status(500).send("Server error");
