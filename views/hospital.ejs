@@ -3,9 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hospital dashboard</title>
+    <title>Hospital Dashboard - RaktSetu</title>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8fafc;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .nav-link {
+            position: relative;
+            transition: color 0.3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background-color: #1d4ed8;
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after,
+        .nav-link.active::after {
+            width: 100%;
+        }
+        .nav-link.active {
+            color: #1d4ed8;
+            font-weight: 500;
+        }
+    </style>
 </head>
-<body>
-    this page is for hospital dashboard
+<body class="min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i class="fas fa-hospital text-blue-600 text-2xl mr-2"></i>
+                        <span class="text-xl font-bold text-gray-800">RaktSetu - Hospital</span>
+                    </div>
+                    <div class="hidden md:ml-10 md:flex md:space-x-8">
+                        <a href="/hospital/<%= user._id %>" class="nav-link active text-gray-900">Dashboard</a>
+                        <a href="/hospital/<%= user._id %>/requests" class="nav-link text-gray-500 hover:text-gray-700">Requests</a>
+                        <a href="#" class="nav-link text-gray-500 hover:text-gray-700">Donors</a>
+                        <a href="#" class="nav-link text-gray-500 hover:text-gray-700">Reports</a>
+                    </div>
+                </div>
+                <div class="hidden md:ml-4 md:flex md:items-center">
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" class="flex items-center max-w-xs rounded-full focus:outline-none">
+                            <span class="ml-2 text-sm font-medium text-gray-700"><%= user.hospitalName %></span>
+                            <i class="fas fa-chevron-down ml-1 text-gray-500 text-xs"></i>
+                        </button>
+                        <div x-show="open" @click.away="open = false" class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                            <div class="py-1">
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
+                                <a href="#" onclick="deleteAccount('<%= user._id %>')" class="block px-4 py-2 text-sm text-red-700 hover:bg-gray-100">Delete Account</a>
+                                <a href="/get-started" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">Dashboard</h1>
+
+        <!-- Blood Stock Overview -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Blood Stock Overview</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 text-center">
+                <% const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']; %>
+                <% bloodGroups.forEach(group => { %>
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <div class="text-2xl font-bold text-red-600"><%= group %></div>
+                        <div class="text-lg font-medium text-gray-700">
+                            <%= user.bloodStock[group] || 0 %> 
+                            <span class="text-sm text-gray-500">units</span>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+        </div>
+
+        <!-- Hospital Details -->
+        <div class="glass-card rounded-xl p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Hospital Details</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Address</p>
+                    <p class="text-gray-800"><%= user.address %>, <%= user.city %>, <%= user.pincode %></p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Coordinates</p>
+                    <p class="text-gray-800"><%= user.location.coordinates[1] %>, <%= user.location.coordinates[0] %></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Update Blood Stock -->
+        <div class="glass-card rounded-xl p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Update Blood Stock</h2>
+            <form id="updateStockForm" class="flex flex-wrap items-center gap-4">
+                <div class="flex-grow">
+                    <label for="bloodGroup" class="sr-only">Blood Group</label>
+                    <select id="bloodGroup" name="bloodGroup" class="w-full p-2 border border-gray-300 rounded-md">
+                        <% bloodGroups.forEach(group => { %>
+                            <option value="<%= group %>"><%= group %></option>
+                        <% }); %>
+                    </select>
+                </div>
+                <div class="flex-grow">
+                    <label for="units" class="sr-only">Units</label>
+                    <input type="number" id="units" name="units" placeholder="Units (e.g., 5 or -2)" class="w-full p-2 border border-gray-300 rounded-md" required>
+                </div>
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Update Stock</button>
+            </form>
+        </div>
+>>>>>>> Stashed changes
+    </main>
+
+    <script>
+        document.getElementById('updateStockForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const bloodGroup = e.target.bloodGroup.value;
+            const units = e.target.units.value;
+            const hospitalId = '<%= user._id %>';
+
+            try {
+                const response = await fetch(`/api/stock/update/${hospitalId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bloodGroup, units: parseInt(units) })
+                });
+                if (response.ok) {
+                    alert('Stock updated successfully!');
+                    location.reload();
+                } else {
+                    alert('Failed to update stock.');
+                }
+            } catch (error) {
+                console.error('Error updating stock:', error);
+                alert('An error occurred.');
+            }
+        });
+
+        async function deleteAccount(hospitalId) {
+            if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                try {
+                    const response = await fetch(`/api/hospital/${hospitalId}`, {
+                        method: 'DELETE'
+                    });
+                    if (response.ok) {
+                        alert('Account deleted successfully.');
+                        window.location.href = '/get-started';
+                    } else {
+                        alert('Failed to delete account.');
+                    }
+                } catch (error) {
+                    console.error('Error deleting account:', error);
+                    alert('An error occurred.');
+                }
+            }
+        }
+    </script>
+    </main>
 </body>
 </html>
