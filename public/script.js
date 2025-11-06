@@ -70,13 +70,18 @@ document.addEventListener('DOMContentLoaded', () => {
                             searchStatus.style.display = 'none';
                             hospitals.forEach(hospital => {
                                 const hospitalCard = `
-                                    <div class="bg-white p-4 rounded-lg shadow-md border border-gray-200">
-                                        <h4 class="font-bold text-lg">${hospital.hospitalName}</h4>
-                                        <p class="text-sm text-gray-600">${hospital.address}, ${hospital.city}</p>
-                                        <p class="text-sm text-gray-500">Contact: ${hospital.contactInfo}</p>
-                                        <div class="mt-2 pt-2 border-t">
-                                            <p class="text-sm font-medium text-green-600">Available Units (${bloodType}): ${hospital.bloodStock[bloodType]}</p>
+                                    <div class="bg-white p-4 rounded-lg shadow-md border border-gray-200 flex flex-col justify-between">
+                                        <div>
+                                            <h4 class="font-bold text-lg">${hospital.hospitalName}</h4>
+                                            <p class="text-sm text-gray-600">${hospital.address}, ${hospital.city}</p>
+                                            <p class="text-sm text-gray-500">Contact: ${hospital.contactInfo}</p>
+                                            <div class="mt-2 pt-2 border-t">
+                                                <p class="text-sm font-medium text-green-600">Available Units (${bloodType}): ${hospital.bloodStock[bloodType]}</p>
+                                            </div>
                                         </div>
+                                        <button class="mt-4 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600" onclick="openRequestModal('${hospital._id}', '${bloodType}')">
+                                            Request Blood
+                                        </button>
                                     </div>
                                 `;
                                 hospitalsList.innerHTML += hospitalCard;
@@ -100,6 +105,14 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 alert('Geolocation is not supported by this browser.');
             }
+        });
+    }
+
+    const useLocationBtn = document.getElementById('useLocationBtn');
+    if (useLocationBtn) {
+        useLocationBtn.addEventListener('click', () => {
+            // This reuses the same logic as the main search button
+            searchHospitalsBtn.click();
         });
     }
     
@@ -163,5 +176,60 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Could not send SOS request. Please try again later.');
             }
         });
+    }
+});
+
+// Modal handling
+let currentHospitalId = null;
+let currentBloodGroup = null;
+
+function openRequestModal(hospitalId, bloodGroup) {
+    currentHospitalId = hospitalId;
+    currentBloodGroup = bloodGroup;
+    document.getElementById('requestModal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('requestModal').classList.add('hidden');
+}
+
+document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+
+document.getElementById('submitRequestBtn').addEventListener('click', async () => {
+    const units = document.getElementById('bloodUnits').value;
+    if (!units || units < 1) {
+        alert('Please enter a valid number of units.');
+        return;
+    }
+
+    // This should be dynamically set from the logged-in user
+    const patientId = document.body.dataset.patientId; 
+
+    try {
+        const response = await fetch('/api/request/hospital', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                patientId,
+                hospitalId: currentHospitalId,
+                bloodGroup: currentBloodGroup,
+                units: parseInt(units, 10)
+            })
+        });
+
+        if (response.ok) {
+            alert('Blood request sent successfully!');
+            closeModal();
+            // Optionally, refresh the requests list
+            if (typeof fetchPatientRequests === 'function') {
+                fetchPatientRequests();
+            }
+        } else {
+            const errorData = await response.json();
+            alert(`Failed to send request: ${errorData.message || 'Server error'}`);
+        }
+    } catch (error) {
+        console.error('Failed to send blood request:', error);
+        alert('An error occurred while sending the request.');
     }
 });

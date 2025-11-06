@@ -365,7 +365,17 @@
                 roleFieldsContainer.innerHTML = `
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Blood Group</label>
-                        <input type="text" name="bloodGroup" class="${inputClasses}" placeholder="e.g., A+" required>
+                        <select name="bloodGroup" class="${inputClasses}" required>
+                            <option value="" disabled selected>Select your blood group</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">City</label>
@@ -462,14 +472,26 @@
 
         document.querySelectorAll('form').forEach(form => {
             form.addEventListener('submit', function (e) {
-                // ✅ For signup, let it submit normally (POST)
+                // For signup: ensure action is set (fallback to currentUserType)
                 if (this.id === 'signupFormElement') {
+                    const rawAction = this.getAttribute('action');
+                    if (!rawAction || rawAction === '') {
+                        if (currentUserType) {
+                            this.action = `/api/${currentUserType.toLowerCase()}/signup`;
+                        }
+                    }
                     console.log("Submitting signup form to:", this.action);
                     return;
                 }
 
-                // ✅ For login, let it submit normally too
+                // For login: ensure action is set (fallback to currentUserType)
                 if (this.id === 'loginFormElement') {
+                    const rawAction = this.getAttribute('action');
+                    if (!rawAction || rawAction === '') {
+                        if (currentUserType) {
+                            this.action = `/api/${currentUserType.toLowerCase()}/login`;
+                        }
+                    }
                     console.log("Submitting login form to:", this.action);
                     return;
                 }
