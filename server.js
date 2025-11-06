@@ -40,6 +40,18 @@ mongoose
 // -------------------------
 // Schemas & Models
 // -------------------------
+const demoRequestSchema = new mongoose.Schema({
+    patientId: String,
+    hospitalName: String,
+    donorId: String,
+    donorName: String,
+    bloodGroup: String,
+    units: Number,
+    datetime: String,
+    status: { type: String, default: 'pending' }
+});
+
+const DemoRequest = mongoose.model("DemoRequest", demoRequestSchema);
 
 // Base user schema for common fields
 const userSchema = new mongoose.Schema({
@@ -78,7 +90,8 @@ const patientSchema = new mongoose.Schema({
 const donorSchema = new mongoose.Schema({
   ...userSchema.obj,
   bloodGroup: { type: String, required: true },
-  city: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
   contactInfo: { type: String, required: true },
   availabilityStatus: { type: String, enum: ['available', 'unavailable'], default: 'available' },
   donationHistory: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Donation' }]
@@ -177,6 +190,36 @@ const loginUser = async (Model, req, res, dashboardView) => {
 // -------------------------
 // API Routes
 // -------------------------
+app.get("/requests", async (req, res) => {
+    try {
+        const patientId = req.query.patientId;
+        if (!patientId) return res.status(400).send("Patient ID missing.");
+
+        // Try to load the patient from the DB. If not found, fall back to a harmless
+        // sample user object so the requests page can render during development/demo.
+        let user = await Patient.findById(patientId);
+        if (!user) {
+            console.warn(`Patient with id ${patientId} not found — rendering requests page with a sample user for demo.`);
+            user = {
+                _id: patientId,
+                fullName: 'Test User',
+                email: 'test@example.com',
+                bloodGroup: 'O+',
+                city: 'Sample City',
+                contactInfo: ''
+            };
+        }
+
+        const requests = await DemoRequest.find({ patientId })
+            .sort({ datetime: -1 });
+
+        res.render("requests", { user, requests });
+
+    } catch (error) {
+        console.error("❌ Error loading requests page:", error);
+        res.status(500).send("Server error");
+    }
+});
 
 // Import routes
 const requestsRoutes = require('./routes/requests');
@@ -648,25 +691,28 @@ app.get('/hospital/:id/requests', async (req, res) => {
 
 // Patient Dashboard
 app.get("/patient", (req, res) => {
-  try {
-    // For now, render with sample user data
-    // In a real app, you would get this from the session or database
-    const sampleUser = {
-      fullName: 'Test User',
-      email: 'test@example.com',
-      bloodGroup: 'O+',
-      city: 'Sample City',
-      contactInfo: '1234567890'
-    };
+    try {
+        // For now, render with sample user data
+        // In a real app, you would get this from the session or database
+        const sampleUser = {
+            // Provide a mock _id so pages that read data-patient-id work during development
+            _id: '000000000000000000000001',
+            fullName: 'Test User',
+            email: 'test@example.com',
+            bloodGroup: 'O+',
+            city: 'Sample City',
+            state: 'Delhi',
+            contactInfo: '1234567890'
+        };
     
-    res.render("patient", { 
-      user: sampleUser,
-      title: 'Patient Dashboard - RaktSetu'
-    });
-  } catch (error) {
-    console.error('Error rendering patient dashboard:', error);
-    res.status(500).send('Server error');
-  }
+        res.render("patient", { 
+            user: sampleUser,
+            title: 'Patient Dashboard - RaktSetu'
+        });
+    } catch (error) {
+        console.error('Error rendering patient dashboard:', error);
+        res.status(500).send('Server error');
+    }
 });
 
 // Home Page
@@ -695,5 +741,86 @@ app.get('/api/districts/:state', (req, res) => {
     } catch (err) {
         console.error("❌ Error fetching districts:", err);
         res.status(500).send("Server error");
+    }
+});
+
+app.post('/api/demo-request', async (req, res) => {
+    try {
+        const { patientId, hospitalName, bloodGroup, units } = req.body;
+
+        const newDemoReq = new DemoRequest({
+            patientId,
+            hospitalName,
+            bloodGroup,
+            units,
+            datetime: new Date().toISOString(),
+            status: 'pending'
+        });
+
+        await newDemoReq.save();
+        res.status(201).json({ success: true, request: newDemoReq });
+
+    } catch (error) {
+        console.error("Demo request save error:", error);
+        res.status(500).json({ success: false });
+    }
+});
+
+app.get('/api/demo-request/:patientId', async (req, res) => {
+    try {
+        const reqs = await DemoRequest.find({ patientId: req.params.patientId })
+                                      .sort({ datetime: -1 });
+        res.json(reqs);
+    } catch (error) {
+        console.error("Demo request fetch error:", error);
+        res.status(500).send("Server error");
+    }
+});
+
+// Patient -> Donor request (creates a demo request targeting a donor)
+app.post('/api/request/donor', async (req, res) => {
+    try {
+        const { patientId, donorId, donorName, bloodGroup, units } = req.body;
+
+        if (!patientId || !donorId || !bloodGroup) {
+            return res.status(400).json({ success: false, message: 'Missing required fields' });
+        }
+
+        const newDemoReq = new DemoRequest({
+            patientId,
+            donorId,
+            donorName: donorName || '',
+            bloodGroup,
+            units: units || 1,
+            datetime: new Date().toISOString(),
+            status: 'pending'
+        });
+
+        await newDemoReq.save();
+
+        console.log(`📨 Patient ${patientId} requested donor ${donorId} for ${bloodGroup}`);
+
+        res.status(201).json({ success: true, request: newDemoReq });
+    } catch (err) {
+        console.error('❌ Error creating donor request:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Return donors for a given state (only available donors)
+app.get('/api/donors/state/:state', async (req, res) => {
+    try {
+        const state = req.params.state;
+        if (!state) return res.status(400).send('State is required');
+
+        const donors = await Donor.find({ state: state, availabilityStatus: 'available' })
+            .select('fullName bloodGroup city state contactInfo')
+            .limit(100)
+            .lean();
+
+        res.json(donors);
+    } catch (err) {
+        console.error('❌ Error fetching donors by state:', err);
+        res.status(500).send('Server error');
     }
 });

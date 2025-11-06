@@ -43,3 +43,7 @@ const stateDistricts = {
 function getDistricts(state) {
     return stateDistricts[state] || [];
 }
+
+module.exports = {
+    getDistricts
+};

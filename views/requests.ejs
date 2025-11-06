@@ -215,185 +215,68 @@
             
             <!-- Request List -->
             <ul class="divide-y divide-gray-200">
-                <!-- Request Item 1 -->
-                <li class="request-row bg-white hover:bg-gray-50 transition duration-150 ease-in-out">
-                    <a href="#" class="block hover:bg-gray-50">
-                        <div class="px-4 py-4 sm:px-6">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <p class="text-sm font-medium text-red-600 truncate">#REQ-001</p>
-                                    <div class="ml-2 flex-shrink-0 flex">
-                                        <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                            Pending
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="ml-2 flex-shrink-0 flex">
-                                    <p class="text-sm text-gray-500">
-                                        <time datetime="2023-11-05">Nov 5, 2023</time>
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="mt-2 sm:flex sm:justify-between">
-                                <div class="sm:flex">
-                                    <p class="flex items-center text-sm text-gray-500">
-                                        <i class="fas fa-tint text-red-400 mr-1.5 h-5 w-5"></i>
-                                        Blood Type: <span class="ml-1 font-medium">O+</span>
-                                    </p>
-                                    <p class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                                        <i class="fas fa-syringe text-gray-400 mr-1.5 h-5 w-5"></i>
-                                        Units: <span class="ml-1 font-medium">2</span>
-                                    </p>
-                                    <p class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                                        <i class="fas fa-hospital text-gray-400 mr-1.5 h-5 w-5"></i>
-                                        Max Hospital, Delhi
-                                    </p>
-                                </div>
-                                <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                                    <i class="far fa-clock text-gray-400 mr-1.5 h-5 w-5"></i>
-                                    <p>
-                                        Required by: <time datetime="2023-11-10">Nov 10, 2023</time>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </li>
+                <% if (requests.length === 0) { %>
+        <li class="px-4 py-6 text-center text-gray-500">
+            No requests found.
+        </li>
+    <% } %>
 
-                <!-- Request Item 2 -->
-                <li class="request-row bg-white hover:bg-gray-50 transition duration-150 ease-in-out">
-                    <a href="#" class="block hover:bg-gray-50">
-                        <div class="px-4 py-4 sm:px-6">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <p class="text-sm font-medium text-red-600 truncate">#REQ-002</p>
-                                    <div class="ml-2 flex-shrink-0 flex">
-                                        <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                            Completed
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="ml-2 flex-shrink-0 flex">
-                                    <p class="text-sm text-gray-500">
-                                        <time datetime="2023-11-03">Nov 3, 2023</time>
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="mt-2 sm:flex sm:justify-between">
-                                <div class="sm:flex">
-                                    <p class="flex items-center text-sm text-gray-500">
-                                        <i class="fas fa-tint text-red-400 mr-1.5 h-5 w-5"></i>
-                                        Blood Type: <span class="ml-1 font-medium">B+</span>
-                                    </p>
-                                    <p class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                                        <i class="fas fa-syringe text-gray-400 mr-1.5 h-5 w-5"></i>
-                                        Units: <span class="ml-1 font-medium">1</span>
-                                    </p>
-                                    <p class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                                        <i class="fas fa-hospital text-gray-400 mr-1.5 h-5 w-5"></i>
-                                        Apollo Hospital, Mumbai
-                                    </p>
-                                </div>
-                                <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                                    <i class="far fa-check-circle text-green-500 mr-1.5 h-5 w-5"></i>
-                                    <p>
-                                        Completed on: <time datetime="2023-11-05">Nov 5, 2023</time>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </li>
+    <% requests.forEach((req, index) => { %>
+        <li class="request-row bg-white hover:bg-gray-50 transition duration-150 ease-in-out">
+            <div class="block">
+                <div class="px-4 py-4 sm:px-6">
+                    
+                    <!-- Top Row -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <p class="text-sm font-medium text-red-600 truncate">
+                                #REQ-<%= index + 1 %>
+                            </p>
 
-                <!-- Request Item 3 -->
-                <li class="request-row bg-white hover:bg-gray-50 transition duration-150 ease-in-out">
-                    <a href="#" class="block hover:bg-gray-50">
-                        <div class="px-4 py-4 sm:px-6">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <p class="text-sm font-medium text-red-600 truncate">#REQ-003</p>
-                                    <div class="ml-2 flex-shrink-0 flex">
-                                        <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                            In Progress
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="ml-2 flex-shrink-0 flex">
-                                    <p class="text-sm text-gray-500">
-                                        <time datetime="2023-11-01">Nov 1, 2023</time>
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="mt-2 sm:flex sm:justify-between">
-                                <div class="sm:flex">
-                                    <p class="flex items-center text-sm text-gray-500">
-                                        <i class="fas fa-tint text-red-400 mr-1.5 h-5 w-5"></i>
-                                        Blood Type: <span class="ml-1 font-medium">A-</span>
-                                    </p>
-                                    <p class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                                        <i class="fas fa-syringe text-gray-400 mr-1.5 h-5 w-5"></i>
-                                        Units: <span class="ml-1 font-medium">3</span>
-                                    </p>
-                                    <p class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                                        <i class="fas fa-hospital text-gray-400 mr-1.5 h-5 w-5"></i>
-                                        Fortis Hospital, Bangalore
-                                    </p>
-                                </div>
-                                <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                                    <i class="fas fa-sync-alt text-blue-500 mr-1.5 h-5 w-5 animate-spin"></i>
-                                    <p>
-                                        Processing
-                                    </p>
-                                </div>
+                            <div class="ml-2 flex-shrink-0 flex">
+                                <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    <% if (req.status === 'pending') { %> bg-yellow-100 text-yellow-800
+                                    <% } else if (req.status === 'completed') { %> bg-green-100 text-green-800
+                                    <% } else if (req.status === 'rejected') { %> bg-red-100 text-red-800
+                                    <% } else { %> bg-blue-100 text-blue-800 <% } %>">
+                                    <%= req.status.charAt(0).toUpperCase() + req.status.slice(1) %>
+                                </p>
                             </div>
                         </div>
-                    </a>
-                </li>
 
-                <!-- Request Item 4 -->
-                <li class="request-row bg-white hover:bg-gray-50 transition duration-150 ease-in-out">
-                    <a href="#" class="block hover:bg-gray-50">
-                        <div class="px-4 py-4 sm:px-6">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <p class="text-sm font-medium text-red-600 truncate">#REQ-004</p>
-                                    <div class="ml-2 flex-shrink-0 flex">
-                                        <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                            Rejected
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="ml-2 flex-shrink-0 flex">
-                                    <p class="text-sm text-gray-500">
-                                        <time datetime="2023-10-28">Oct 28, 2023</time>
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="mt-2 sm:flex sm:justify-between">
-                                <div class="sm:flex">
-                                    <p class="flex items-center text-sm text-gray-500">
-                                        <i class="fas fa-tint text-red-400 mr-1.5 h-5 w-5"></i>
-                                        Blood Type: <span class="ml-1 font-medium">AB+</span>
-                                    </p>
-                                    <p class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                                        <i class="fas fa-syringe text-gray-400 mr-1.5 h-5 w-5"></i>
-                                        Units: <span class="ml-1 font-medium">2</span>
-                                    </p>
-                                    <p class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                                        <i class="fas fa-hospital text-gray-400 mr-1.5 h-5 w-5"></i>
-                                        AIIMS, Delhi
-                                    </p>
-                                </div>
-                                <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                                    <i class="fas fa-times-circle text-red-500 mr-1.5 h-5 w-5"></i>
-                                    <p>
-                                        Rejected: Insufficient stock
-                                    </p>
-                                </div>
-                            </div>
+                        <div class="ml-2 flex-shrink-0 flex">
+                            <p class="text-sm text-gray-500">
+                                <%= new Date(req.datetime).toLocaleDateString() %>
+                            </p>
                         </div>
-                    </a>
-                </li>
+                    </div>
+
+                    <!-- Middle Row -->
+                    <div class="mt-2 sm:flex sm:justify-between">
+                        <div class="sm:flex">
+                            <p class="flex items-center text-sm text-gray-500">
+                                <i class="fas fa-tint text-red-400 mr-1.5"></i>
+                                Blood Type: <span class="ml-1 font-medium"><%= req.bloodGroup %></span>
+                            </p>
+
+                            <p class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
+                                <i class="fas fa-syringe text-gray-400 mr-1.5"></i>
+                                Units: <span class="ml-1 font-medium"><%= req.units %></span>
+                            </p>
+
+                            <p class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
+                                <i class="fas fa-hospital text-gray-400 mr-1.5"></i>
+                                <%= req.hospitalName %>
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </li>
+    <% }); %>
+
+                
             </ul>
             
             <!-- Pagination -->

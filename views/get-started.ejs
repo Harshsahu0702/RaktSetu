@@ -391,6 +391,11 @@
                     </div>
                 `;
             } else if (userType === 'Hospital') {
+                // Update the fullName input in the common fields to show it's for contact person
+                const fullNameInput = document.querySelector('#signupFormElement input[name="fullName"]');
+                fullNameInput.placeholder = "Contact Person's Name";
+                
+                // Only add hospital-specific fields here
                 roleFieldsContainer.innerHTML = `
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Hospital Name</label>
@@ -399,6 +404,10 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Full Address</label>
                         <input type="text" name="address" class="${inputClasses}" placeholder="123 Main St" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">State</label>
+                        <input type="text" name="state" class="${inputClasses}" placeholder="State" required>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">City</label>

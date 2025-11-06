@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,18 +11,18 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-        
+
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #f8fafc;
         }
-        
+
         /* Custom dropdown styling */
         .custom-select {
             position: relative;
             width: 100%;
         }
-        
+
         .custom-select select {
             width: 100%;
             padding: 0.5rem 2.5rem 0.5rem 1rem;
@@ -37,32 +38,32 @@
             background-size: 1.5em 1.5em;
             cursor: pointer;
         }
-        
+
         .custom-select select:focus {
             outline: none;
             border-color: #ef4444;
             box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
         }
-        
+
         /* Make sure dropdown options are scrollable */
         select option {
             padding: 0.5rem;
             background-color: white;
             color: #1f2937;
         }
-        
+
         /* For Firefox */
         select {
             -moz-appearance: none !important;
             text-indent: 1px;
             text-overflow: '';
         }
-        
+
         /* For IE10+ */
         select::-ms-expand {
             display: none;
         }
-        
+
         .glass-card {
             background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
@@ -71,17 +72,17 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             transition: all 0.3s ease;
         }
-        
+
         .glass-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
-        
+
         .nav-link {
             position: relative;
             transition: color 0.3s ease;
         }
-        
+
         .nav-link::after {
             content: '';
             position: absolute;
@@ -92,65 +93,71 @@
             background-color: #ef4444;
             transition: width 0.3s ease;
         }
-        
+
         .nav-link:hover::after,
         .nav-link.active::after {
             width: 100%;
         }
-        
+
         .nav-link.active {
             color: #ef4444;
             font-weight: 500;
         }
-        
+
         .btn-primary {
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             transition: all 0.3s ease;
         }
-        
+
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.3);
         }
-        
+
         .animate-fade-in {
             animation: fadeIn 0.5s ease-in-out;
         }
-        
+
         .animate-slide-up {
             animation: slideUp 0.5s ease-out;
         }
-        
+
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
-        
+
         @keyframes slideUp {
-            from { 
+            from {
                 opacity: 0;
                 transform: translateY(20px);
             }
-            to { 
+
+            to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-        
+
         .search-input {
             transition: all 0.3s ease;
             border: 1px solid #e2e8f0;
         }
-        
+
         .search-input:focus {
             border-color: #ef4444;
             box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
         }
-        
+
         .donor-card {
             transition: all 0.3s ease;
         }
-        
+
         .donor-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
@@ -158,14 +165,13 @@
     </style>
     <!-- Add Leaflet CSS and JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossorigin=""/>
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-            crossorigin=""></script>
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <!-- SweetAlert2 for beautiful alerts -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
+
 <body class="min-h-screen" data-patient-id="<%= user._id %>">
     <!-- Request Blood Modal -->
     <div id="requestModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
@@ -177,24 +183,26 @@
                         <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
-                
+
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Hospital</label>
                         <input type="text" id="hospitalName" class="w-full p-2 border rounded-md" readonly>
                     </div>
-                    
+
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Blood Type</label>
                             <input type="text" id="requestBloodType" class="w-full p-2 border rounded-md" readonly>
                         </div>
                         <div>
-                            <label for="units" class="block text-sm font-medium text-gray-700 mb-1">Units Required</label>
-                            <input type="number" id="units" min="1" max="10" value="1" class="w-full p-2 border rounded-md">
+                            <label for="units" class="block text-sm font-medium text-gray-700 mb-1">Units
+                                Required</label>
+                            <input type="number" id="units" min="1" max="10" value="1"
+                                class="w-full p-2 border rounded-md">
                         </div>
                     </div>
-                    
+
                     <div>
                         <label for="urgency" class="block text-sm font-medium text-gray-700 mb-1">Urgency Level</label>
                         <select id="urgency" class="w-full p-2 border rounded-md">
@@ -203,23 +211,26 @@
                             <option value="emergency">Emergency (Within 1 hour)</option>
                         </select>
                     </div>
-                    
+
                     <div>
                         <label for="requiredBy" class="block text-sm font-medium text-gray-700 mb-1">Required By</label>
                         <input type="datetime-local" id="requiredBy" class="w-full p-2 border rounded-md">
                     </div>
-                    
+
                     <div>
                         <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Additional Notes</label>
-                        <textarea id="notes" rows="3" class="w-full p-2 border rounded-md" placeholder="Any special requirements or notes..."></textarea>
+                        <textarea id="notes" rows="3" class="w-full p-2 border rounded-md"
+                            placeholder="Any special requirements or notes..."></textarea>
                     </div>
                 </div>
-                
+
                 <div class="mt-6 flex space-x-3">
-                    <button onclick="submitBloodRequest()" class="flex-1 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                    <button onclick="submitBloodRequest()"
+                        class="flex-1 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
                         Submit Request
                     </button>
-                    <button onclick="closeRequestModal()" class="flex-1 bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                    <button onclick="closeRequestModal()"
+                        class="flex-1 bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
                         Cancel
                     </button>
                 </div>
@@ -237,28 +248,42 @@
                         <span class="text-xl font-bold text-gray-800">RaktConnect</span>
                     </div>
                     <div class="hidden md:ml-10 md:flex md:space-x-8">
-                        <a href="/patient" class="border-b-2 border-red-500 text-gray-900 inline-flex items-center px-1 pt-1 text-sm font-medium">Dashboard</a>
-                        <a href="/requests" class="text-gray-500 hover:text-gray-700 hover:border-b-2 hover:border-gray-300 inline-flex items-center px-1 pt-1 text-sm font-medium">My Requests</a>
+                        <a href="/patient"
+                            class="border-b-2 border-red-500 text-gray-900 inline-flex items-center px-1 pt-1 text-sm font-medium">Dashboard</a>
+                        <a href="/requests"
+                            class="text-gray-500 hover:text-gray-700 hover:border-b-2 hover:border-gray-300 inline-flex items-center px-1 pt-1 text-sm font-medium">My
+                            Requests</a>
                     </div>
                 </div>
                 <div class="hidden md:ml-4 md:flex-shrink-0 md:flex md:items-center">
                     <div class="relative" x-data="{ open: false }">
-                        <button @click="open = !open" class="flex items-center max-w-xs rounded-full focus:outline-none" id="user-menu" aria-expanded="false" aria-haspopup="true">
-                            <img class="h-8 w-8 rounded-full" src="https://ui-avatars.com/api/?name=<%= user.fullName %>&background=ef4444&color=fff" alt="User profile">
-                            <span class="ml-2 text-sm font-medium text-gray-700"><%= user.fullName %></span>
+                        <button @click="open = !open" class="flex items-center max-w-xs rounded-full focus:outline-none"
+                            id="user-menu" aria-expanded="false" aria-haspopup="true">
+                            <img class="h-8 w-8 rounded-full"
+                                src="https://ui-avatars.com/api/?name=<%= user.fullName %>&background=ef4444&color=fff"
+                                alt="User profile">
+                            <span class="ml-2 text-sm font-medium text-gray-700">
+                                <%= user.fullName %>
+                            </span>
                             <i class="fas fa-chevron-down ml-1 text-gray-500 text-xs"></i>
                         </button>
-                        <div x-show="open" @click.away="open = false" class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5" role="menu" aria-orientation="vertical" aria-labelledby="user-menu">
+                        <div x-show="open" @click.away="open = false"
+                            class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
+                            role="menu" aria-orientation="vertical" aria-labelledby="user-menu">
                             <div class="py-1" role="none">
                                 <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
-                                <a href="#" onclick="deleteAccount('<%= user._id %>')" class="block px-4 py-2 text-sm text-red-700 hover:bg-gray-100">Delete Account</a>
-                                <a href="/get-started" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</a>
+                                <a href="#" onclick="deleteAccount('<%= user._id %>')"
+                                    class="block px-4 py-2 text-sm text-red-700 hover:bg-gray-100">Delete Account</a>
+                                <a href="/get-started"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</a>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="-mr-2 flex items-center md:hidden">
-                    <button type="button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none" aria-controls="mobile-menu" aria-expanded="false">
+                    <button type="button"
+                        class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none"
+                        aria-controls="mobile-menu" aria-expanded="false">
                         <span class="sr-only">Open main menu</span>
                         <i class="fas fa-bars h-6 w-6"></i>
                     </button>
@@ -270,25 +295,39 @@
     <!-- Mobile menu -->
     <div class="md:hidden hidden" id="mobile-menu">
         <div class="pt-2 pb-3 space-y-1">
-            <a href="/patient" class="bg-red-50 border-red-500 text-red-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">Dashboard</a>
-            <a href="/requests" class="border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">My Requests</a>
-            <a href="#" class="border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">Haemoglobin</a>
-            <a href="#" class="border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">Disease</a>
+            <a href="/patient"
+                class="bg-red-50 border-red-500 text-red-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">Dashboard</a>
+            <a href="/requests"
+                class="border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">My
+                Requests</a>
+            <a href="#"
+                class="border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">Haemoglobin</a>
+            <a href="#"
+                class="border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">Disease</a>
         </div>
         <div class="pt-4 pb-3 border-t border-gray-200">
             <div class="flex items-center px-4">
                 <div class="flex-shrink-0">
-                    <img class="h-10 w-10 rounded-full" src="https://ui-avatars.com/api/?name=<%= user.fullName %>&background=ef4444&color=fff" alt="User profile">
+                    <img class="h-10 w-10 rounded-full"
+                        src="https://ui-avatars.com/api/?name=<%= user.fullName %>&background=ef4444&color=fff"
+                        alt="User profile">
                 </div>
                 <div class="ml-3">
-                    <div class="text-base font-medium text-gray-800"><%= user.fullName %></div>
+                    <div class="text-base font-medium text-gray-800">
+                        <%= user.fullName %>
+                    </div>
                     <div class="text-sm font-medium text-gray-500">Patient</div>
                 </div>
             </div>
             <div class="mt-3 space-y-1">
-                <a href="#" class="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100">Your Profile</a>
-                <a href="#" class="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100">Settings</a>
-                <a href="#" class="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100">Sign out</a>
+                <a href="#"
+                    class="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100">Your
+                    Profile</a>
+                <a href="#"
+                    class="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100">Settings</a>
+                <a href="#"
+                    class="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100">Sign
+                    out</a>
             </div>
         </div>
     </div>
@@ -299,12 +338,14 @@
         <div class="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-6 text-white mb-8 animate-fade-in">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h2 class="text-2xl font-bold mb-1">Welcome back, <%= user.fullName %></h2>
+                    <h2 class="text-2xl font-bold mb-1">Welcome back, <%= user.fullName %>
+                    </h2>
                     <p class="text-red-100">Check the status of your blood requests and find donors easily.</p>
                 </div>
                 <div class="flex items-center space-x-4 mt-4 md:mt-0">
-                    
-                    <button id="sosBtn" class="bg-red-700 text-white px-6 py-2 rounded-lg font-medium hover:bg-red-800 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-red-600 animate-pulse">
+
+                    <button id="sosBtn"
+                        class="bg-red-700 text-white px-6 py-2 rounded-lg font-medium hover:bg-red-800 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-red-600 animate-pulse">
                         <i class="fas fa-bell"></i> SOS Request
                     </button>
                 </div>
@@ -321,44 +362,47 @@
                 <div>
                     <label for="state" class="block text-sm font-medium text-gray-700 mb-1">State</label>
                     <div class="custom-select">
-                        <select id="state" class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent" size="1">
+                        <select id="state"
+                            class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            size="1">
                             <option value="">Select State</option>
-                                <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
-                                <option value="Andhra Pradesh">Andhra Pradesh</option>
-                                <option value="Arunachal Pradesh">Arunachal Pradesh</option>
-                                <option value="Assam">Assam</option>
-                                <option value="Bihar">Bihar</option>
-                                <option value="Chandigarh">Chandigarh</option>
-                                <option value="Chhattisgarh">Chhattisgarh</option>
-                                <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</option>
-                                <option value="Delhi">Delhi</option>
-                                <option value="Goa">Goa</option>
-                                <option value="Gujarat">Gujarat</option>
-                                <option value="Haryana">Haryana</option>
-                                <option value="Himachal Pradesh">Himachal Pradesh</option>
-                                <option value="Jammu and Kashmir">Jammu and Kashmir</option>
-                                <option value="Jharkhand">Jharkhand</option>
-                                <option value="Karnataka">Karnataka</option>
-                                <option value="Kerala">Kerala</option>
-                                <option value="Ladakh">Ladakh</option>
-                                <option value="Lakshadweep">Lakshadweep</option>
-                                <option value="Madhya Pradesh">Madhya Pradesh</option>
-                                <option value="Maharashtra">Maharashtra</option>
-                                <option value="Manipur">Manipur</option>
-                                <option value="Meghalaya">Meghalaya</option>
-                                <option value="Mizoram">Mizoram</option>
-                                <option value="Nagaland">Nagaland</option>
-                                <option value="Odisha">Odisha</option>
-                                <option value="Puducherry">Puducherry</option>
-                                <option value="Punjab">Punjab</option>
-                                <option value="Rajasthan">Rajasthan</option>
-                                <option value="Sikkim">Sikkim</option>
-                                <option value="Tamil Nadu">Tamil Nadu</option>
-                                <option value="Telangana">Telangana</option>
-                                <option value="Tripura">Tripura</option>
-                                <option value="Uttar Pradesh">Uttar Pradesh</option>
-                                <option value="Uttarakhand">Uttarakhand</option>
-                                <option value="West Bengal">West Bengal</option>
+                            <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
+                            <option value="Andhra Pradesh">Andhra Pradesh</option>
+                            <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                            <option value="Assam">Assam</option>
+                            <option value="Bihar">Bihar</option>
+                            <option value="Chandigarh">Chandigarh</option>
+                            <option value="Chhattisgarh">Chhattisgarh</option>
+                            <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman
+                                and Diu</option>
+                            <option value="Delhi">Delhi</option>
+                            <option value="Goa">Goa</option>
+                            <option value="Gujarat">Gujarat</option>
+                            <option value="Haryana">Haryana</option>
+                            <option value="Himachal Pradesh">Himachal Pradesh</option>
+                            <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+                            <option value="Jharkhand">Jharkhand</option>
+                            <option value="Karnataka">Karnataka</option>
+                            <option value="Kerala">Kerala</option>
+                            <option value="Ladakh">Ladakh</option>
+                            <option value="Lakshadweep">Lakshadweep</option>
+                            <option value="Madhya Pradesh">Madhya Pradesh</option>
+                            <option value="Maharashtra">Maharashtra</option>
+                            <option value="Manipur">Manipur</option>
+                            <option value="Meghalaya">Meghalaya</option>
+                            <option value="Mizoram">Mizoram</option>
+                            <option value="Nagaland">Nagaland</option>
+                            <option value="Odisha">Odisha</option>
+                            <option value="Puducherry">Puducherry</option>
+                            <option value="Punjab">Punjab</option>
+                            <option value="Rajasthan">Rajasthan</option>
+                            <option value="Sikkim">Sikkim</option>
+                            <option value="Tamil Nadu">Tamil Nadu</option>
+                            <option value="Telangana">Telangana</option>
+                            <option value="Tripura">Tripura</option>
+                            <option value="Uttar Pradesh">Uttar Pradesh</option>
+                            <option value="Uttarakhand">Uttarakhand</option>
+                            <option value="West Bengal">West Bengal</option>
 
                         </select>
                     </div>
@@ -366,7 +410,9 @@
                 <div>
                     <label for="district" class="block text-sm font-medium text-gray-700 mb-1">District</label>
                     <div class="custom-select">
-                        <select id="district" class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent" size="1">
+                        <select id="district"
+                            class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            size="1">
                             <option value="">Select District</option>
                             <!-- Will be populated by JavaScript -->
                         </select>
@@ -375,7 +421,9 @@
                 <div>
                     <label for="blood-type" class="block text-sm font-medium text-gray-700 mb-1">Blood Type</label>
                     <div class="custom-select">
-                        <select id="blood-type" class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent" size="1">
+                        <select id="blood-type"
+                            class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            size="1">
                             <option value="">Select Blood Type</option>
                             <option value="A+">A+</option>
                             <option value="A-">A-</option>
@@ -389,13 +437,13 @@
                     </div>
                 </div>
                 <div class="flex items-end">
-                    <button id="searchHospitalsBtn" type="button" 
-                            class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center">
+                    <button id="searchHospitalsBtn" type="button"
+                        class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center">
                         <i class="fas fa-search mr-2"></i> Search Hospitals
                     </button>
                 </div>
             </div>
-            
+
             <!-- Search Results -->
             <div id="search-results" class="mt-8">
                 <!-- Loading Spinner -->
@@ -461,85 +509,31 @@
             </div>
         </div>
 
-    <!-- Donors Results -->
-    <div id="donors-results" class="mt-6 space-y-4">
-        <!-- Donors will be loaded here -->
-    </div>
-</div>
+        <!-- Donors Results -->
+        <div id="donors-results" class="mt-6 space-y-4">
+            <!-- Donors will be loaded here -->
+        </div>
+        </div>
         <div class="grid grid-cols-1 gap-6">
             <!-- Recent Blood Requests -->
-            
-            
-            <!-- Nearby Donors -->
+
+
+                <!-- Nearby Donors (dynamic) -->
             <div class="glass-card rounded-xl p-6 animate-slide-up" style="animation-delay: 0.4s;">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-lg font-semibold text-gray-800">Nearby Donors</h3>
-                        <button class="text-sm text-red-600 hover:text-red-700 focus:outline-none">View All</button>
-                    </div>
-                    <div class="space-y-4">
-                        <!-- Donor 1 -->
-                        <div class="donor-card flex items-center p-3 bg-white rounded-lg border border-gray-100 hover:shadow-md transition-all">
-                            <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Donor" class="w-12 h-12 rounded-full object-cover">
-                            <div class="ml-3 flex-1">
-                                <h4 class="text-sm font-medium text-gray-800">Rahul Sharma</h4>
-                                <div class="flex items-center mt-1">
-                                    <span class="text-xs text-gray-500">O+ • 5km away</span>
-                                </div>
-                            </div>
-                            <button class="ml-2 px-3 py-1 bg-red-50 text-red-600 text-xs font-medium rounded-full hover:bg-red-100 transition-colors">
-                                Contact
-                            </button>
-                        </div>
-                        
-                        <!-- Donor 2 -->
-                        <div class="donor-card flex items-center p-3 bg-white rounded-lg border border-gray-100 hover:shadow-md transition-all">
-                            <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Donor" class="w-12 h-12 rounded-full object-cover">
-                            <div class="ml-3 flex-1">
-                                <h4 class="text-sm font-medium text-gray-800">Priya Patel</h4>
-                                <div class="flex items-center mt-1">
-                                    <span class="text-xs text-gray-500">A+ • 3km away</span>
-                                </div>
-                            </div>
-                            <button class="ml-2 px-3 py-1 bg-red-50 text-red-600 text-xs font-medium rounded-full hover:bg-red-100 transition-colors">
-                                Contact
-                            </button>
-                        </div>
-                        
-                        <!-- Donor 3 -->
-                        <div class="donor-card flex items-center p-3 bg-white rounded-lg border border-gray-100 hover:shadow-md transition-all">
-                            <img src="https://randomuser.me/api/portraits/men/67.jpg" alt="Donor" class="w-12 h-12 rounded-full object-cover">
-                            <div class="ml-3 flex-1">
-                                <h4 class="text-sm font-medium text-gray-800">Amit Kumar</h4>
-                                <div class="flex items-center mt-1">
-                                    <span class="text-xs text-gray-500">B+ • 7km away</span>
-                                </div>
-                            </div>
-                            <button class="ml-2 px-3 py-1 bg-red-50 text-red-600 text-xs font-medium rounded-full hover:bg-red-100 transition-colors">
-                                Contact
-                            </button>
-                        </div>
-                        
-                        <!-- Donor 4 -->
-                        <div class="donor-card flex items-center p-3 bg-white rounded-lg border border-gray-100 hover:shadow-md transition-all">
-                            <img src="https://randomuser.me/api/portraits/women/28.jpg" alt="Donor" class="w-12 h-12 rounded-full object-cover">
-                            <div class="ml-3 flex-1">
-                                <h4 class="text-sm font-medium text-gray-800">Neha Gupta</h4>
-                                <div class="flex items-center mt-1">
-                                    <span class="text-xs text-gray-500">AB+ • 4km away</span>
-                                </div>
-                            </div>
-                            <button class="ml-2 px-3 py-1 bg-red-50 text-red-600 text-xs font-medium rounded-full hover:bg-red-100 transition-colors">
-                                Contact
-                            </button>
-                        </div>
-                    </div>
-                    <div class="mt-4 text-center">
-                        <button class="text-sm text-red-600 hover:text-red-700 font-medium focus:outline-none">
-                            Load More <i class="fas fa-chevron-down ml-1"></i>
-                        </button>
-                    </div>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800">Nearby Donors</h3>
+                    <button id="viewAllDonorsBtn" class="text-sm text-red-600 hover:text-red-700 focus:outline-none">View All</button>
+                </div>
+                <div id="nearby-donors-list" class="space-y-4">
+                    <!-- filled dynamically -->
+                </div>
+                <div class="mt-4 text-center">
+                    <button id="loadMoreDonors" class="text-sm text-red-600 hover:text-red-700 font-medium focus:outline-none">
+                        Load More <i class="fas fa-chevron-down ml-1"></i>
+                    </button>
                 </div>
             </div>
+        </div>
         </div>
     </main>
 
@@ -611,6 +605,138 @@
         }
 
         window.onload = fetchPatientRequests;
+    </script>
+    <script>
+        // Fetch donors from server for a given state and render them
+        async function fetchDonorsByState(state) {
+            if (!state) return;
+            const list = document.getElementById('nearby-donors-list');
+            if (!list) return;
+            list.innerHTML = '<div class="text-center text-gray-500 py-6">Loading donors...</div>';
+
+            try {
+                const res = await fetch(`/api/donors/state/${encodeURIComponent(state)}`);
+                if (!res.ok) {
+                    throw new Error('Failed to fetch donors');
+                }
+                const donors = await res.json();
+                renderDonors(donors);
+            } catch (err) {
+                console.error('Error fetching donors by state:', err);
+                list.innerHTML = '<div class="text-center text-red-500 py-6">Could not load donors.</div>';
+            }
+        }
+
+        function renderDonors(donors) {
+            const container = document.getElementById('nearby-donors-list');
+            container.innerHTML = '';
+
+            if (!donors || donors.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-6">No donors found in this state.</div>';
+                return;
+            }
+
+            donors.forEach(d => {
+                const card = document.createElement('div');
+                card.className = 'donor-card flex items-center p-3 bg-white rounded-lg border border-gray-100 hover:shadow-md transition-all';
+
+                const img = document.createElement('img');
+                img.className = 'w-12 h-12 rounded-full object-cover';
+                img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(d.fullName)}&background=ef4444&color=fff`;
+                img.alt = d.fullName || 'Donor';
+
+                const info = document.createElement('div');
+                info.className = 'ml-3 flex-1';
+
+                const name = document.createElement('h4');
+                name.className = 'text-sm font-medium text-gray-800';
+                name.textContent = d.fullName || 'Anonymous';
+
+                const meta = document.createElement('div');
+                meta.className = 'flex items-center mt-1 text-xs text-gray-500';
+                meta.textContent = `${d.bloodGroup || '-'} • ${d.city || '-'}, ${d.state || '-'}`;
+
+                info.appendChild(name);
+                info.appendChild(meta);
+
+                const btnWrap = document.createElement('div');
+
+                const requestBtn = document.createElement('button');
+                requestBtn.className = 'ml-2 px-3 py-1 bg-red-600 text-white text-xs font-medium rounded-full hover:bg-red-700 transition-colors';
+                requestBtn.textContent = 'Request';
+                requestBtn.onclick = async (e) => {
+                    e.preventDefault();
+                    const donorId = d._id || d.id || null;
+                    const donorName = d.fullName || '';
+                    const bloodGroup = d.bloodGroup || '';
+                    if (!donorId) {
+                        await Swal.fire('Error', 'Donor id not available', 'error');
+                        return;
+                    }
+
+                    const confirm = await Swal.fire({
+                        title: 'Send Request to Donor?',
+                        text: `Request ${bloodGroup || ''} from ${donorName}?`,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#EF4444',
+                        confirmButtonText: 'Send Request'
+                    });
+
+                    if (!confirm.isConfirmed) return;
+
+                    try {
+                        const payload = {
+                            patientId: document.body.dataset.patientId || '<%= user._id %>',
+                            donorId,
+                            donorName,
+                            bloodGroup,
+                            units: 1
+                        };
+
+                        const resp = await fetch('/api/request/donor', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        const data = await resp.json();
+                        if (resp.ok && data.success) {
+                            await Swal.fire('Request sent', 'Your request was sent to the donor.', 'success');
+                        } else {
+                            console.error('Request failed', data);
+                            await Swal.fire('Error', data.message || 'Could not send request', 'error');
+                        }
+                    } catch (err) {
+                        console.error('Error sending donor request:', err);
+                        await Swal.fire('Error', 'Could not send request', 'error');
+                    }
+                };
+
+                btnWrap.appendChild(requestBtn);
+
+                card.appendChild(img);
+                card.appendChild(info);
+                card.appendChild(btnWrap);
+
+                container.appendChild(card);
+            });
+        }
+
+        // On page load, try to fetch donors for the rendered patient (if server provided state)
+        document.addEventListener('DOMContentLoaded', function () {
+            const patientState = '<%= user && user.state ? user.state : "" %>';
+            if (patientState) fetchDonorsByState(patientState);
+
+            // Also fetch donors when patient selects a state from the search dropdown
+            const stateSelect = document.getElementById('state');
+            if (stateSelect) {
+                stateSelect.addEventListener('change', function () {
+                    const selected = this.value;
+                    if (selected) fetchDonorsByState(selected);
+                });
+            }
+        });
     </script>
     <script>
         const sosBtn = document.getElementById('sosBtn');
@@ -685,7 +811,7 @@
 
         // Initialize the map with default center in India (Delhi)
         const map = L.map('map').setView([20.5937, 78.9629], 5);
-        
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
@@ -758,6 +884,9 @@
                 } else {
                     showNoResults();
                 }
+
+                // Also fetch donors for the selected state and render them
+                try { await fetchDonorsByState(state); } catch (e) { console.warn('Donor fetch failed', e); }
             } catch (error) {
                 console.error('Error fetching hospitals:', error);
                 showError();
@@ -768,7 +897,7 @@
 
         function displayResults(hospitals, bloodType) {
             const hospitalsList = document.getElementById('hospitals-list');
-            
+
             hospitals.forEach(hospital => {
                 // Add marker to map
                 const marker = L.marker([hospital.lat, hospital.lon], {
@@ -809,11 +938,11 @@
         function createHospitalCard(hospital, bloodType) {
             const div = document.createElement('div');
             div.className = 'bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow';
-            
+
             const name = hospital.tags.name || 'Unnamed Hospital';
             const address = hospital.tags.address || hospital.tags['addr:full'] || 'Address not available';
             const phone = hospital.tags.phone || 'N/A';
-            
+
             div.innerHTML = `
                 <div class="flex items-start justify-between">
                     <div>
@@ -850,7 +979,7 @@
                     </div>
                 </div>
             `;
-            
+
             return div;
         }
 
@@ -873,7 +1002,7 @@
 
         // Request Blood Modal Functions
         let currentHospital = null;
-        
+
         function openRequestModal(hospitalId, bloodType, hospitalName, hospitalPhone) {
             currentHospital = {
                 id: hospitalId,
@@ -881,114 +1010,92 @@
                 phone: hospitalPhone,
                 bloodType: bloodType
             };
-            
+
             // Set modal values
             document.getElementById('hospitalName').value = hospitalName;
             document.getElementById('requestBloodType').value = bloodType;
-            
+
             // Set default required by time (current time + 2 hours)
             const now = new Date();
             now.setHours(now.getHours() + 2);
             document.getElementById('requiredBy').value = now.toISOString().slice(0, 16);
-            
+
             // Show modal
             document.getElementById('requestModal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
         }
-        
+
         function closeRequestModal() {
             document.getElementById('requestModal').classList.add('hidden');
             document.body.style.overflow = 'auto';
             currentHospital = null;
         }
-        
+
         async function submitBloodRequest() {
-            if (!currentHospital) return;
-            
-            const requestData = {
-                hospitalId: currentHospital.id,
-                hospitalName: currentHospital.name,
-                bloodType: currentHospital.bloodType,
-                units: parseInt(document.getElementById('units').value),
-                urgency: document.getElementById('urgency').value,
-                requiredBy: document.getElementById('requiredBy').value,
-                notes: document.getElementById('notes').value,
-                status: 'pending',
-                requestedAt: new Date().toISOString(),
-                patientId: document.body.dataset.patientId
-            };
-            
+            const patientId = document.body.dataset.patientId;
+            const patientName = "<%= user.fullName %>";
+
+            const units = parseInt(document.getElementById('units').value);
+            const bloodGroup = currentHospital.bloodType;
+            const hospitalName = currentHospital.name;
+            const requiredBy = document.getElementById('requiredBy').value;
+            const notes = document.getElementById('notes').value;
+            const urgency = document.getElementById('urgency').value;
+
+            if (!patientId) {
+                Swal.fire("Error", "Patient ID missing", "error");
+                return;
+            }
+
             try {
-                // Show loading state
-                const submitBtn = document.querySelector('#requestModal button[onclick="submitBloodRequest()"]');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
-                
-                // Simulate API call
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                
-                // Show success message with SweetAlert2
-                const result = await Swal.fire({
+                // ✅ Save new DEMO request
+                const response = await fetch('/api/demo-request', {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        patientId,
+                        patientName,
+                        hospitalName,
+                        bloodGroup,
+                        units,
+                        requiredBy,
+                        notes,
+                        urgency
+                    })
+                });
+
+                const result = await response.json();
+                if (!result.success) throw new Error("Failed to save request");
+
+                // ✅ Success Popup (your UI)
+                await Swal.fire({
                     title: 'Request Submitted!',
-                    text: `Your request for ${requestData.units} unit(s) of ${requestData.bloodType} blood has been received.`,
+                    text: `Your request for ${units} unit(s) of ${bloodGroup} has been received.`,
                     icon: 'success',
-                    iconColor: '#EF4444',
                     confirmButtonColor: '#EF4444',
                     confirmButtonText: 'View Requests',
                     showCancelButton: true,
                     cancelButtonText: 'Close',
-                    customClass: {
-                        popup: 'border border-gray-200',
-                        title: 'text-2xl font-bold text-gray-800',
-                        confirmButton: 'px-6 py-2 rounded-lg',
-                        cancelButton: 'px-6 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 mr-2',
-                    },
-                    buttonsStyling: false,
-                    allowOutsideClick: false,
-                    allowEscapeKey: false
                 });
 
-                // Close modal
                 closeRequestModal();
-                
-                // Redirect to requests page if user clicks 'View Requests' or closes the alert
-                if (result.isConfirmed) {
-                    window.location.href = '/requests';
-                }
-                
-            } catch (error) {
-                console.error('Error submitting blood request:', error);
-                // Show error message with SweetAlert2
-                await Swal.fire({
-                    title: 'Error!',
-                    text: 'Failed to submit blood request. Please try again.',
-                    icon: 'error',
-                    confirmButtonColor: '#EF4444',
-                    confirmButtonText: 'OK',
-                    customClass: {
-                        popup: 'border border-gray-200',
-                        title: 'text-2xl font-bold text-gray-800',
-                        confirmButton: 'px-6 py-2 rounded-lg',
-                    },
-                    buttonsStyling: false
-                });
-            } finally {
-                const submitBtn = document.querySelector('#requestModal button[onclick="submitBloodRequest()"]');
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = 'Submit Request';
-                }
+
+                // ✅ Redirect to My Requests page
+                window.location.href = `/requests?patientId=${patientId}`;
+
+            } catch (err) {
+                console.error(err);
+                Swal.fire("Error", "Could not submit request", "error");
             }
         }
-        
+
         // Close modal when clicking outside
-        document.getElementById('requestModal').addEventListener('click', function(e) {
+        document.getElementById('requestModal').addEventListener('click', function (e) {
             if (e.target === this) {
                 closeRequestModal();
             }
         });
-        
+
         function showNoResults() {
             const status = document.getElementById('search-status');
             status.innerHTML = `
@@ -1059,14 +1166,14 @@
             const stateSelect = document.getElementById('state');
             const districtSelect = document.getElementById('district');
             const selectedState = stateSelect.value;
-            
+
             // Clear existing options
             districtSelect.innerHTML = '<option value="">Select District</option>';
-            
+
             if (selectedState && window.stateDistricts[selectedState]) {
                 // Enable district select
                 districtSelect.disabled = false;
-                
+
                 // Add district options
                 const districts = window.stateDistricts[selectedState];
                 districts.forEach(district => {
@@ -1082,47 +1189,48 @@
         }
 
         // Initialize the page
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Add event listener for state selection change
             const stateSelect = document.getElementById('state');
             if (stateSelect) {
                 stateSelect.addEventListener('change', populateDistricts);
-                
+
                 // Trigger change event if a state is already selected
                 if (stateSelect.value) {
                     stateSelect.dispatchEvent(new Event('change'));
                 }
             }
-            
+
             // Add event listener for search button
             document.getElementById('searchHospitalsBtn').addEventListener('click', searchHospitals);
         });
     </script>
     <script>
-    // Add this to your existing scripts
-    document.getElementById('state').addEventListener('change', async function() {
-        const state = this.value;
-        const districtSelect = document.getElementById('district');
-        
-        // Clear existing options
-        districtSelect.innerHTML = '<option value="">Select District</option>';
-        
-        if (!state) return;
-        
-        try {
-            const response = await fetch(`/api/districts/${state}`);
-            const districts = await response.json();
-            
-            districts.forEach(district => {
-                const option = document.createElement('option');
-                option.value = district;
-                option.textContent = district;
-                districtSelect.appendChild(option);
-            });
-        } catch (error) {
-            console.error('Error fetching districts:', error);
-        }
-    });
-</script>
+        // Add this to your existing scripts
+        document.getElementById('state').addEventListener('change', async function () {
+            const state = this.value;
+            const districtSelect = document.getElementById('district');
+
+            // Clear existing options
+            districtSelect.innerHTML = '<option value="">Select District</option>';
+
+            if (!state) return;
+
+            try {
+                const response = await fetch(`/api/districts/${state}`);
+                const districts = await response.json();
+
+                districts.forEach(district => {
+                    const option = document.createElement('option');
+                    option.value = district;
+                    option.textContent = district;
+                    districtSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error fetching districts:', error);
+            }
+        });
+    </script>
 </body>
+
 </html>
