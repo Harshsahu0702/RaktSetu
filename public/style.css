@@ -328,6 +328,7 @@ height: 110vh;
     padding: 20px 35px;
     font-size: 18px;
     color: white;
+    text-decoration: none;
     background-color: #ed0b07; /* bright red */
     border: none;
     border-radius: 50px;       /* circular / pill shape */

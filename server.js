@@ -30,7 +30,7 @@ app.set("views", path.join(__dirname, "views"));
 // MongoDB Connection
 // -------------------------
 mongoose
-  .connect("mongodb://127.0.0.1:27017/raktsetuDB", {
+  .connect("mongodb+srv://nikhilkr8967_db_user:hfFheMMvE5vKdfIb@cluster0.hfn2zxu.mongodb.net/", {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
@@ -178,12 +178,18 @@ const loginUser = async (Model, req, res, dashboardView) => {
 // API Routes
 // -------------------------
 
+// Import routes
+const requestsRoutes = require('./routes/requests');
+
+// Use routes
+app.use('/', requestsRoutes);
+
 // Patient Signup
 app.post("/api/patient/signup", async (req, res) => {
     try {
-        const { fullName, email, password, confirmPassword, bloodGroup, city, contactInfo } = req.body;
+        const { fullName, email, password, confirmPassword, bloodGroup, city, contactInfo, state } = req.body;
 
-        if (!fullName || !email || !password || !bloodGroup || !city || !contactInfo)
+        if (!fullName || !email || !password || !bloodGroup || !city || !contactInfo || !state)
             return res.status(400).send("All fields are required.");
 
         if (password !== confirmPassword)
@@ -199,6 +205,7 @@ app.post("/api/patient/signup", async (req, res) => {
             password: hashedPassword,
             bloodGroup,
             city,
+            state,
             contactInfo,
             role: 'patient'
         });
@@ -215,14 +222,14 @@ app.post("/api/patient/signup", async (req, res) => {
 // Donor Signup
 app.post("/api/donor/signup", async (req, res) => {
     try {
-        const { fullName, email, password, confirmPassword, bloodGroup, city, contactInfo } = req.body;
+        const { fullName, email, password, confirmPassword, bloodGroup, city, contactInfo, state } = req.body;
 
-        if (!fullName || !email || !password || !bloodGroup || !city || !contactInfo)
+        if (!fullName || !email || !password || !bloodGroup || !city || !contactInfo || !state)
             return res.status(400).send("All fields are required.");
 
-                    await newPatient.save();
-                    console.log(`✅ New Patient registered: ${newPatient.email}`);
-                    res.render("patient", { user: newPatient });
+        if (password !== confirmPassword)
+            return res.status(400).send("Passwords do not match.");
+
         const existing = await Donor.findOne({ email });
         if (existing) return res.status(400).send("Donor already exists.");
 
@@ -233,6 +240,7 @@ app.post("/api/donor/signup", async (req, res) => {
             password: hashedPassword,
             bloodGroup,
             city,
+            state,
             contactInfo,
             role: 'donor'
         });
@@ -249,9 +257,9 @@ app.post("/api/donor/signup", async (req, res) => {
 // Hospital Signup
 app.post("/api/hospital/signup", async (req, res) => {
     try {
-        const { hospitalName, email, password, confirmPassword, address, city, pincode, contactInfo, fullName } = req.body;
+        const { hospitalName, email, password, confirmPassword, address, city, pincode, contactInfo, fullName, state } = req.body;
 
-        if (!hospitalName || !email || !password || !address || !city || !pincode || !contactInfo || !fullName)
+        if (!hospitalName || !email || !password || !address || !city || !pincode || !contactInfo || !fullName || !state)
             return res.status(400).send("All fields are required.");
 
         if (password !== confirmPassword)
@@ -267,6 +275,7 @@ app.post("/api/hospital/signup", async (req, res) => {
             password: hashedPassword,
             address,
             city,
+            state,
             pincode,
             contactInfo,
             fullName,
@@ -318,22 +327,15 @@ app.post("/api/hospital/login", (req, res) => loginUser(Hospital, req, res, "hos
 // -------------------------
 app.post('/api/hospitals/search', async (req, res) => {
     try {
-        const { longitude, latitude, bloodGroup } = req.body;
+        const { state, district, bloodGroup } = req.body;
 
-        if (!longitude || !latitude || !bloodGroup) {
-            return res.status(400).send("Longitude, latitude, and blood group are required.");
+        if (!state || !district || !bloodGroup) {
+            return res.status(400).send("State, district, and blood group are required.");
         }
 
         const hospitals = await Hospital.find({
-            location: {
-                $near: {
-                    $geometry: {
-                        type: "Point",
-                        coordinates: [parseFloat(longitude), parseFloat(latitude)]
-                    },
-                    $maxDistance: 5000 // 5 kilometers
-                }
-            },
+            state: state,
+            city: district,
             [`bloodStock.${bloodGroup}`]: { $gt: 0 }
         });
 
@@ -644,9 +646,30 @@ app.get('/hospital/:id/requests', async (req, res) => {
     }
 });
 
-// -------------------------
-// Default Routes
-// -------------------------
+// Patient Dashboard
+app.get("/patient", (req, res) => {
+  try {
+    // For now, render with sample user data
+    // In a real app, you would get this from the session or database
+    const sampleUser = {
+      fullName: 'Test User',
+      email: 'test@example.com',
+      bloodGroup: 'O+',
+      city: 'Sample City',
+      contactInfo: '1234567890'
+    };
+    
+    res.render("patient", { 
+      user: sampleUser,
+      title: 'Patient Dashboard - RaktSetu'
+    });
+  } catch (error) {
+    console.error('Error rendering patient dashboard:', error);
+    res.status(500).send('Server error');
+  }
+});
+
+// Home Page
 app.get("/", (req, res) => {
   res.render("index"); // Render your main page (index.ejs)
 });
@@ -655,9 +678,22 @@ app.get("/get-started", (req, res) => {
   res.render("get-started"); // Render your main page (get-started.ejs)
 });
 
+// ... (rest of the code remains the same)
 // -------------------------
 // Server Start
 // -------------------------
 app.listen(PORT, () =>
   console.log(`🚀 Server running at http://localhost:${PORT}`)
 );
+
+// Add this route before the server start
+app.get('/api/districts/:state', (req, res) => {
+    try {
+        const stateDistricts = require('./public/js/districts.js');
+        const districts = stateDistricts.getDistricts(req.params.state);
+        res.json(districts);
+    } catch (err) {
+        console.error("❌ Error fetching districts:", err);
+        res.status(500).send("Server error");
+    }
+});

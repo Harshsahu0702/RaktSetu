@@ -1,103 +1,88 @@
-let map;
-let geocoder;
-
-function initMap() {
-    // Default location (e.g., center of India)
-    const defaultLocation = { lat: 20.5937, lng: 78.9629 };
-    map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 5,
-        center: defaultLocation,
-    });
-    geocoder = new google.maps.Geocoder();
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     // Patient Dashboard: Search for Hospitals
     const searchHospitalsBtn = document.getElementById('searchHospitalsBtn');
     if (searchHospitalsBtn) {
-        searchHospitalsBtn.addEventListener('click', () => {
+        searchHospitalsBtn.addEventListener('click', async () => {
             const bloodType = document.getElementById('blood-type').value;
             const searchStatus = document.getElementById('search-status');
             const hospitalsList = document.getElementById('hospitals-list');
-            const mapDiv = document.getElementById('map');
+            const loadingSpinner = document.getElementById('loading-spinner');
 
             if (!bloodType) {
                 alert('Please select a blood type.');
                 return;
             }
 
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(async (position) => {
+            // Disable search button and show loading spinner
+            searchHospitalsBtn.disabled = true;
+            searchHospitalsBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Searching...';
+            if (loadingSpinner) loadingSpinner.classList.remove('hidden');
+            searchStatus.style.display = 'none';
+            hospitalsList.innerHTML = '';
+
+            try {
+                if (navigator.geolocation) {
+                    const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject);
+                    });
+
                     const { latitude, longitude } = position.coords;
+                    const response = await fetch('/api/hospitals/search', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ latitude, longitude, bloodGroup: bloodType })
+                    });
 
-                    searchStatus.innerHTML = `<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-4xl text-red-500"></i><p class="mt-2">Searching for nearby hospitals...</p></div>`;
-                    hospitalsList.innerHTML = '';
-                    mapDiv.style.display = 'block';
+                    if (!response.ok) throw new Error('Network response was not ok.');
 
-                    try {
-                        const response = await fetch('/api/hospitals/search', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ latitude, longitude, bloodGroup: bloodType })
-                        });
-
-                        if (!response.ok) throw new Error('Network response was not ok.');
-
-                        const hospitals = await response.json();
-                        
-                        // Center map on user's location
-                        const userLocation = { lat: latitude, lng: longitude };
-                        map.setCenter(userLocation);
-                        map.setZoom(12);
-                        new google.maps.Marker({
-                            position: userLocation,
-                            map: map,
-                            title: 'Your Location',
-                            icon: {
-                                path: google.maps.SymbolPath.CIRCLE,
-                                scale: 8,
-                                fillColor: '#4285F4',
-                                fillOpacity: 1,
-                                strokeColor: 'white',
-                                strokeWeight: 2
-                            }
-                        });
-
-                        if (hospitals.length === 0) {
-                            searchStatus.innerHTML = `<div class="text-center py-8"><i class="fas fa-exclamation-circle text-4xl text-gray-400"></i><h4 class="text-lg font-medium text-gray-600 mt-2">No Nearby Hospitals Found</h4><p class="text-sm text-gray-500">No hospitals within 5km have ${bloodType} blood available.</p></div>`;
-                            searchStatus.style.display = 'block';
-                        } else {
-                            searchStatus.style.display = 'none';
-                            hospitals.forEach(hospital => {
-                                const hospitalCard = `
-                                    <div class="bg-white p-4 rounded-lg shadow-md border border-gray-200 flex flex-col justify-between">
-                                        <div>
-                                            <h4 class="font-bold text-lg">${hospital.hospitalName}</h4>
-                                            <p class="text-sm text-gray-600">${hospital.address}, ${hospital.city}</p>
-                                            <p class="text-sm text-gray-500">Contact: ${hospital.contactInfo}</p>
-                                            <div class="mt-2 pt-2 border-t">
-                                                <p class="text-sm font-medium text-green-600">Available Units (${bloodType}): ${hospital.bloodStock[bloodType]}</p>
-                                            </div>
+                    const hospitals = await response.json();
+                    
+                    // Hide loading spinner
+                    if (loadingSpinner) loadingSpinner.classList.add('hidden');
+                    
+                    if (hospitals.length === 0) {
+                        searchStatus.innerHTML = `
+                            <div class="text-center py-8">
+                                <div class="text-4xl mb-2">❌</div>
+                                <h4 class="text-lg font-medium text-gray-600">No hospitals found for the selected area.</h4>
+                            </div>`;
+                        searchStatus.style.display = 'block';
+                    } else {
+                        searchStatus.style.display = 'none';
+                        hospitals.forEach(hospital => {
+                                const hospitalCard = document.createElement('div');
+                                hospitalCard.className = 'bg-white p-4 rounded-lg shadow-md border border-gray-200 flex flex-col justify-between';
+                                hospitalCard.innerHTML = `
+                                    <div>
+                                        <h4 class="font-bold text-lg">${hospital.hospitalName || 'Unnamed Hospital'}</h4>
+                                        <p class="text-sm text-gray-600">${hospital.address || 'Address not available'}, ${hospital.city || ''}</p>
+                                        ${hospital.contactInfo ? `<p class="text-sm text-gray-500">Contact: ${hospital.contactInfo}</p>` : ''}
+                                        <div class="mt-2 pt-2 border-t">
+                                            <p class="text-sm font-medium text-green-600">Available Units (${bloodType}): ${hospital.bloodStock?.[bloodType] || 0}</p>
                                         </div>
-                                        <button class="mt-4 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600" onclick="openRequestModal('${hospital._id}', '${bloodType}')">
-                                            Request Blood
-                                        </button>
                                     </div>
+                                    <button class="mt-4 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600" onclick="openRequestModal('${hospital._id}', '${bloodType}')">
+                                        Request Blood
+                                    </button>
                                 `;
-                                hospitalsList.innerHTML += hospitalCard;
+                                hospitalsList.appendChild(hospitalCard);
 
-                                // Add marker for each hospital
-                                new google.maps.Marker({
-                                    map: map,
-                                    position: { lat: hospital.location.coordinates[1], lng: hospital.location.coordinates[0] },
-                                    title: hospital.hospitalName
-                                });
                             });
                         }
                     } catch (error) {
-                        console.error('Failed to search for hospitals:', error);
-                        searchStatus.innerHTML = `<div class="text-center py-8"><i class="fas fa-times-circle text-4xl text-red-400"></i><h4 class="text-lg font-medium text-gray-600 mt-2">Search Failed</h4><p class="text-sm text-gray-500">Could not perform the search. Please try again later.</p></div>`;
+                        console.error('Search error:', error);
+                        if (loadingSpinner) loadingSpinner.classList.add('hidden');
+                        searchStatus.innerHTML = `
+                            <div class="text-center py-8">
+                                <div class="text-4xl mb-2">⚠️</div>
+                                <h4 class="text-lg font-medium text-gray-600">Error fetching hospitals</h4>
+                                <p class="text-sm text-gray-500">Please try again later.</p>
+                            </div>`;
                         searchStatus.style.display = 'block';
+                    } finally {
+                        // Re-enable search button and reset its text
+                        searchHospitalsBtn.disabled = false;
+                        searchHospitalsBtn.innerHTML = '<i class="fas fa-search mr-2"></i> Search Hospitals';
                     }
                 }, () => {
                     alert('Unable to retrieve your location. Please enable location services.');
