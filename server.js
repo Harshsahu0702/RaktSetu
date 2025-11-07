@@ -502,7 +502,7 @@ app.get('/api/requests/patient/:patientId', async (req, res) => {
 // -------------------------
 // Smart Matching & Notification Logic
 // -------------------------
-const notifyDonorsAndHospitals = async (bloodRequest) => {
+const notifyDonorsAndHospitals = async (bloodRequest) => {  
     try {
         // Find available donors with the same blood group in the same city
         const matchingDonors = await Donor.find({
@@ -530,6 +530,54 @@ const notifyDonorsAndHospitals = async (bloodRequest) => {
         console.error('❌ Notification error:', error);
     }
 };
+
+// -------------------------
+// Hospital Blood Stock Routes
+// -------------------------
+app.get('/api/hospitals/:hospitalId/blood-stock', async (req, res) => {
+    try {
+        const { hospitalId } = req.params;
+        
+        // Find the hospital
+        const hospital = await Hospital.findById(hospitalId).select('bloodStock');
+        
+        if (!hospital) {
+            return res.status(404).json({ error: 'Hospital not found' });
+        }
+        
+        // Ensure bloodStock exists and has all required fields
+        const defaultStock = {
+            'A+': { units: 0 },
+            'A-': { units: 0 },
+            'B+': { units: 0 },
+            'B-': { units: 0 },
+            'AB+': { units: 0 },
+            'AB-': { units: 0 },
+            'O+': { units: 0 },
+            'O-': { units: 0 }
+        };
+        
+        // Merge with default values to ensure all blood groups exist
+        const bloodStock = { ...defaultStock, ...(hospital.bloodStock || {}) };
+        
+        // Ensure each blood group has the correct structure
+        Object.keys(bloodStock).forEach(group => {
+            if (typeof bloodStock[group] === 'number') {
+                bloodStock[group] = { units: bloodStock[group] };
+            } else if (!bloodStock[group] || typeof bloodStock[group] !== 'object') {
+                bloodStock[group] = { units: 0 };
+            }
+        });
+        
+        res.json(bloodStock);
+    } catch (err) {
+        console.error('❌ Error fetching blood stock:', err);
+        res.status(500).json({ 
+            error: 'Failed to fetch blood stock',
+            details: err.message 
+        });
+    }
+});
 
 // -------------------------
 // Hospital Functionality Routes
@@ -579,18 +627,146 @@ app.post('/api/requests/update/:requestId', async (req, res) => {
     }
 });
 
+// Update a specific blood group's stock
 app.post('/api/stock/update/:hospitalId', async (req, res) => {
     try {
         const { bloodGroup, units } = req.body; // units can be positive or negative
         const { hospitalId } = req.params;
         
-        const update = { $inc: { [`bloodStock.${bloodGroup}`]: units } };
-        const updatedHospital = await Hospital.findByIdAndUpdate(hospitalId, update, { new: true });
-
+        // Validate blood group
+        const validBloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+        if (!validBloodGroups.includes(bloodGroup)) {
+            return res.status(400).json({ error: 'Invalid blood group' });
+        }
+        
+        // Find the hospital first
+        const hospital = await Hospital.findById(hospitalId);
+        if (!hospital) {
+            return res.status(404).json({ error: 'Hospital not found' });
+        }
+        
+        // Initialize bloodStock if it doesn't exist
+        if (!hospital.bloodStock) {
+            hospital.bloodStock = {};
+        }
+        
+        // Initialize the specific blood group if it doesn't exist
+        if (typeof hospital.bloodStock[bloodGroup] !== 'object') {
+            hospital.bloodStock[bloodGroup] = { units: 0 };
+        }
+        
+        // Calculate new units, ensuring it doesn't go below 0
+        const currentUnits = hospital.bloodStock[bloodGroup].units || 0;
+        const newUnits = currentUnits + units;
+        
+        if (newUnits < 0) {
+            return res.status(400).json({ 
+                error: 'Insufficient stock available',
+                currentStock: currentUnits,
+                requestedChange: units
+            });
+        }
+        
+        // Update the specific blood group
+        hospital.bloodStock[bloodGroup].units = newUnits;
+        
+        // Mark the bloodStock field as modified to ensure it gets saved
+        hospital.markModified('bloodStock');
+        
+        // Save the updated hospital with the modified bloodStock
+        const updatedHospital = await hospital.save();
+        
+        if (!updatedHospital) {
+            throw new Error('Failed to save hospital data');
+        }
+        
+        // Return the updated blood stock
         res.json(updatedHospital.bloodStock);
     } catch (err) {
         console.error("❌ Stock update error:", err);
-        res.status(500).send("Server error");
+        res.status(500).json({ 
+            error: 'Failed to update blood stock',
+            details: err.message 
+        });
+    }
+});
+
+// Update all blood stock data at once
+app.put('/api/hospitals/:hospitalId/blood-stock', async (req, res) => {
+    try {
+        const { hospitalId } = req.params;
+        const updatedStock = req.body;
+        
+        console.log('📤 Received blood stock update request:', { hospitalId, updatedStock });
+        
+        // Validate the request body structure
+        const validBloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+        
+        // Check if all required blood groups are present and have valid units
+        const isValidUpdate = Object.entries(updatedStock).every(([group, data]) => {
+            // Check if the group is valid and data is an object with units
+            return validBloodGroups.includes(group) && 
+                   data !== null && 
+                   typeof data === 'object' && 
+                   'units' in data &&
+                   !isNaN(parseInt(data.units)) && 
+                   parseInt(data.units) >= 0;
+        });
+        
+        if (!isValidUpdate) {
+            console.error('❌ Invalid blood stock data:', updatedStock);
+            return res.status(400).json({ 
+                error: 'Invalid blood stock data. Must include all blood groups with non-negative units.' 
+            });
+        }
+        
+        // Find the hospital
+        const hospital = await Hospital.findById(hospitalId);
+        if (!hospital) {
+            console.error('❌ Hospital not found:', hospitalId);
+            return res.status(404).json({ error: 'Hospital not found' });
+        }
+        
+        // Initialize bloodStock if it doesn't exist
+        if (!hospital.bloodStock) {
+            hospital.bloodStock = {};
+        }
+        
+        // Prepare the update object with just the numbers (not objects)
+        const updateObj = {};
+        validBloodGroups.forEach(group => {
+            if (updatedStock[group] && typeof updatedStock[group] === 'object') {
+                updateObj[`bloodStock.${group}`] = parseInt(updatedStock[group].units) || 0;
+            } else {
+                updateObj[`bloodStock.${group}`] = 0; // Default to 0 if not provided
+            }
+        });
+        
+        // Update the hospital document directly with the new values
+        const updatedHospital = await Hospital.findByIdAndUpdate(
+            hospitalId,
+            { $set: updateObj },
+            { new: true, runValidators: true }
+        );
+        
+        if (!updatedHospital) {
+            throw new Error('Failed to update hospital blood stock');
+        }
+        
+        console.log('✅ Blood stock updated successfully for hospital:', hospitalId);
+        
+        res.json({ 
+            message: 'Blood stock updated successfully', 
+            data: updatedHospital.bloodStock 
+        });
+        
+    } catch (err) {
+        console.error('❌ Error updating blood stock:', err);
+        res.status(500).json({ 
+            error: 'Failed to update blood stock',
+            details: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
     }
 });
 
