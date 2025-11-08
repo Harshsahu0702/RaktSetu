@@ -245,7 +245,7 @@
                 <div class="flex items-center">
                     <div class="flex-shrink-0 flex items-center">
                         <i class="fas fa-tint text-red-600 text-2xl mr-2"></i>
-                        <span class="text-xl font-bold text-gray-800">RaktConnect</span>
+                        <span class="text-xl font-bold text-gray-800">RaktSetu</span>
                     </div>
                     <div class="hidden md:ml-10 md:flex md:space-x-8">
                         <a href="/patient"
@@ -686,11 +686,25 @@
 
                     try {
                         const payload = {
+                            // Source information (patient making the request)
                             patientId: document.body.dataset.patientId || '<%= user._id %>',
+                            patientName: '<%= user.fullName %>',
+                            sourceHospitalName: '<%= user.fullName %>',
+                            state: document.getElementById('state')?.value || '<%= user.state || "" %>',
+                            
+                            // Target information (donor)
                             donorId,
                             donorName,
+                            targetHospitalName: donorName, // Storing donor name in targetHospitalName for consistency
+                            
+                            // Request details
                             bloodGroup,
-                            units: 1
+                            units: 1,
+                            requestType: 'donor',
+                            status: 'pending',
+                            contactPerson: '<%= user.fullName %>',
+                            contactNumber: '<%= user.phone || "Not provided" %>',
+                            datetime: new Date().toISOString()
                         };
 
                         const resp = await fetch('/api/request/donor', {
@@ -1028,46 +1042,86 @@
         function closeRequestModal() {
             document.getElementById('requestModal').classList.add('hidden');
             document.body.style.overflow = 'auto';
-            currentHospital = null;
         }
 
         async function submitBloodRequest() {
-            const patientId = document.body.dataset.patientId;
+            const patientId = "<%= user._id %>";
             const patientName = "<%= user.fullName %>";
-
-            const units = parseInt(document.getElementById('units').value);
-            const bloodGroup = currentHospital.bloodType;
-            const hospitalName = currentHospital.name;
-            const requiredBy = document.getElementById('requiredBy').value;
-            const notes = document.getElementById('notes').value;
-            const urgency = document.getElementById('urgency').value;
-
-            if (!patientId) {
-                Swal.fire("Error", "Patient ID missing", "error");
-                return;
-            }
-
+            
             try {
-                // ✅ Save new DEMO request
+                if (!currentHospital) {
+                    throw new Error("No hospital selected. Please select a hospital first.");
+                }
+
+                const units = parseInt(document.getElementById('units').value);
+                const bloodGroup = currentHospital.bloodType || document.getElementById('blood-type').value;
+                const hospitalName = currentHospital.name;
+                const requiredBy = document.getElementById('requiredBy').value;
+                const notes = document.getElementById('notes').value;
+                const urgency = document.getElementById('urgency').value;
+
+                if (!patientId) {
+                    throw new Error("Patient ID is missing. Please log in again.");
+                }
+
+                if (!hospitalName) {
+                    throw new Error("Hospital information is incomplete.");
+                }
+
+                if (isNaN(units) || units <= 0) {
+                    throw new Error("Please enter a valid number of units.");
+                }
+
+                // Show loading state
+                const submitBtn = document.querySelector('button[onclick="submitBloodRequest()"]');
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+                // Get patient's name from the welcome section
+                const welcomeHeader = document.querySelector('.bg-gradient-to-r h2');
+                let patientFullName = "";
+                
+                if (welcomeHeader) {
+                    // Extract name from "Welcome back, Name!" text
+                    const welcomeText = welcomeHeader.textContent.trim();
+                    const nameMatch = welcomeText.match(/Welcome back, (.+?)(!|$)/i);
+                    patientFullName = nameMatch ? nameMatch[1].trim() : "<%= user.fullName %>";
+                } else {
+                    // Fallback to user data if welcome section not found
+                    patientFullName = "<%= user.fullName %>";
+                }
+                
+                // Submit the request with the patient's name in sourceHospitalName
                 const response = await fetch('/api/demo-request', {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         patientId,
-                        patientName,
-                        hospitalName,
-                        bloodGroup,
-                        units,
-                        requiredBy,
-                        notes,
-                        urgency
+                        state: document.getElementById('state')?.value || '<%= user.state || "" %>',
+                        patientName: patientFullName,
+                        sourceHospitalName: patientFullName, // Using patient's name from welcome section
+                        targetHospitalName: hospitalName,
+                        hospitalName: hospitalName, // For backward compatibility
+                        bloodGroup: bloodGroup.toUpperCase(),
+                        units: parseInt(units, 10),
+                        requiredBy: requiredBy ? new Date(requiredBy) : null,
+                        notes: notes || '',
+                        urgency: urgency || 'medium',
+                        requestType: 'patient',
+                        status: 'pending',
+                        contactPerson: patientFullName,
+                        contactNumber: "<%= user.phone || 'Not provided' %>"
                     })
                 });
 
                 const result = await response.json();
-                if (!result.success) throw new Error("Failed to save request");
+                
+                if (!response.ok) {
+                    throw new Error(result.message || 'Failed to submit request');
+                }
 
-                // ✅ Success Popup (your UI)
+                // Show success message
                 await Swal.fire({
                     title: 'Request Submitted!',
                     text: `Your request for ${units} unit(s) of ${bloodGroup} has been received.`,
@@ -1076,16 +1130,31 @@
                     confirmButtonText: 'View Requests',
                     showCancelButton: true,
                     cancelButtonText: 'Close',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = `/requests?patientId=${patientId}`;
+                    }
                 });
 
+                // Close modal and reset form
                 closeRequestModal();
+                document.getElementById('requestForm').reset();
 
-                // ✅ Redirect to My Requests page
-                window.location.href = `/requests?patientId=${patientId}`;
-
-            } catch (err) {
-                console.error(err);
-                Swal.fire("Error", "Could not submit request", "error");
+            } catch (error) {
+                console.error('Error submitting blood request:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: error.message || 'Failed to submit blood request. Please try again.',
+                    icon: 'error',
+                    confirmButtonColor: '#EF4444'
+                });
+            } finally {
+                // Reset button state
+                const submitBtn = document.querySelector('button[onclick="submitBloodRequest()"]');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Submit Request';
+                }
             }
         }
 

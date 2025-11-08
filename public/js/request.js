@@ -15,15 +15,31 @@ class RequestButton {
       this.button.disabled = true;
       this.button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Sending...';
       
-      const response = await fetch('/api/request', {
+      // Get the selected state from the dropdown
+      const stateSelect = document.getElementById('state');
+      if (!stateSelect) {
+        throw new Error('State dropdown not found');
+      }
+      const selectedState = stateSelect.value.trim();
+      if (!selectedState) {
+        throw new Error('Please select a state');
+      }
+      
+      const response = await fetch('/api/request/donor', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           patientId: document.body.dataset.userId,
+          patientName: document.body.dataset.userName || 'Patient',
+          state: selectedState,
           donorId: this.donorId,
-          bloodGroup: this.bloodGroup
+          donorName: this.button.dataset.donorName || 'Donor',
+          bloodGroup: this.bloodGroup,
+          units: 1, // Default to 1 unit if not specified
+          contactNumber: document.body.dataset.userPhone || '',
+          notes: 'Request from patient portal'
         })
       });
 

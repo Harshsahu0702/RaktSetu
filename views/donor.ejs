@@ -860,35 +860,63 @@
     </div>
 
     <script>
-        // Sample blood requests data (in a real app, this would come from your backend)
-        const bloodRequests = [
-            {
-                id: 'req_001',
-                patientName: 'Rajesh Kumar',
-                bloodGroup: '<%= _user.bloodGroup %>',
-                units: 2,
-                hospital: 'City Hospital, Mumbai',
-                requiredBy: '2023-11-08T12:00:00',
-                message: 'Urgently needed for surgery. Patient is in critical condition.',
-                doctor: 'Dr. Sharma',
-                contact: '+91 98765 43210',
-                timestamp: new Date().toISOString(),
-                status: 'pending' // pending, accepted, declined
-            },
-            {
-                id: 'req_002',
-                patientName: 'Priya Patel',
-                bloodGroup: '<%= _user.bloodGroup %>',
-                units: 1,
-                hospital: 'Global Hospital, Andheri',
-                requiredBy: '2023-11-09T10:00:00',
-                message: 'Required for thalassemia patient. Regular donor not available.',
-                doctor: 'Dr. Mehta',
-                contact: '+91 98765 12340',
-                timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-                status: 'pending'
+        // Store donor's state and blood group in variables
+        const donorState = '<%= _user.state || "" %>';
+        const donorBloodGroup = '<%= _user.bloodGroup || "" %>';
+        console.log('Donor Profile:', { state: donorState, bloodGroup: donorBloodGroup });
+        
+        // Array to store blood requests
+        let bloodRequests = [];
+
+        // Function to fetch blood requests from the server
+        async function fetchBloodRequests() {
+            try {
+                // Show loading state
+                const container = document.getElementById('requests-container');
+                container.innerHTML = '<div class="text-center py-4"><p>Loading requests...</p></div>';
+
+                // Fetch requests from the server
+                const response = await fetch(`/api/demo-request?bloodGroup=${encodeURIComponent(donorBloodGroup)}&state=${encodeURIComponent(donorState)}`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch blood requests');
+                }
+                
+                const data = await response.json();
+                
+                // Map the API response to match our expected format
+                bloodRequests = data.map(request => ({
+                    id: request._id || `req_${Math.random().toString(36).substr(2, 9)}`,
+                    patientName: request.patientName || 'Patient',
+                    bloodGroup: request.bloodGroup || 'Unknown',
+                    units: request.units || 1,
+                    hospital: request.targetHospitalName || 'Hospital',
+                    requiredBy: request.requiredBy || new Date().toISOString(),
+                    message: request.notes || 'Blood donation requested',
+                    doctor: 'Hospital Staff',
+                    contact: request.contactNumber || 'Contact not provided',
+                    timestamp: request.datetime || new Date().toISOString(),
+                    status: 'pending',
+                    requestType: request.requestType || 'patient',
+                    state: request.state || 'Unknown'
+                }));
+                
+                // Update the UI with the fetched requests
+                renderBloodRequests();
+                updateRequestCount();
+                
+            } catch (error) {
+                console.error('Error fetching blood requests:', error);
+                const container = document.getElementById('requests-container');
+                container.innerHTML = `
+                    <div class="text-center py-4 text-red-600">
+                        <p>Failed to load blood requests. Please try again later.</p>
+                        <button onclick="fetchBloodRequests()" class="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                            Retry
+                        </button>
+                    </div>`;
             }
-        ];
+        }
         
         // Format time as "X minutes/hours/days ago"
         function formatTimeAgo(dateString) {
@@ -923,7 +951,7 @@
                 hour12: true
             };
             const date = new Date(dateString);
-            return 'Required by: ' + date.toLocaleDateString('en-IN', options);
+            return date.toLocaleDateString('en-IN', options);
         }
         
         // Show request details in modal
@@ -1123,7 +1151,8 @@
                 requestElement.querySelector('.request-blood-group').textContent = request.bloodGroup;
                 requestElement.querySelector('.request-units').textContent = request.units + (request.units === 1 ? ' unit' : ' units');
                 requestElement.querySelector('.request-location').textContent = request.hospital;
-                requestElement.querySelector('.request-date').textContent = formatDate(request.requiredBy);
+                // Show when the request was made instead of when it's needed by
+                requestElement.querySelector('.request-date').textContent = 'Requested on: ' + formatDate(request.timestamp);
                 requestElement.querySelector('.request-time').textContent = formatTimeAgo(request.timestamp);
                 requestElement.querySelector('.request-message').textContent = request.message;
                 requestElement.querySelector('.request-doctor').textContent = request.doctor;
@@ -1156,7 +1185,28 @@
             updateRequestCount();
         }
         
+        // Function to update the request count in the UI
+        function updateRequestCount() {
+            const pendingCount = bloodRequests.filter(req => req.status === 'pending').length;
+            const countElement = document.getElementById('request-count');
+            if (countElement) {
+                countElement.textContent = `${pendingCount} New`;
+                countElement.classList.toggle('hidden', pendingCount === 0);
+            }
+        }
+
+        // Set up auto-refresh every 2 minutes
+        let refreshInterval = setInterval(fetchBloodRequests, 2 * 60 * 1000);
+
+        // Clean up interval when the page is unloaded
+        window.addEventListener('beforeunload', () => {
+            if (refreshInterval) clearInterval(refreshInterval);
+        });
+
         document.addEventListener('DOMContentLoaded', function () {
+            // Fetch blood requests when the page loads
+            fetchBloodRequests();
+            
             // Generate QR Code
             const donorData = {
                 id: "<%= _user._id %>",

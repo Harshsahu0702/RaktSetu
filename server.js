@@ -41,14 +41,32 @@ mongoose
 // Schemas & Models
 // -------------------------
 const demoRequestSchema = new mongoose.Schema({
+    // Patient information
     patientId: String,
-    hospitalName: String,
+    patientName: String,
+    
+    // Source information (for patient requests, this will be the patient's name)
+    sourceHospitalId: String,
+    sourceHospitalName: String,  // Will store patient's name for patient requests
+    state: { type: String, required: true },  // State of the requester
+    // Target hospital (the one receiving the request)
+    targetHospitalId: String,
+    targetHospitalName: String,
+    // Legacy fields (kept for backward compatibility)
+    hospitalId: { type: String, default: null },
+    hospitalName: { type: String, default: null },
+    // Other fields
     donorId: String,
     donorName: String,
     bloodGroup: String,
     units: Number,
-    datetime: String,
-    status: { type: String, default: 'pending' }
+    datetime: { type: Date, default: Date.now },
+    status: { type: String, default: 'pending' },
+    requestType: { type: String, enum: ['patient', 'hospital', 'donor'], default: 'patient' },
+    contactPerson: String,
+    contactNumber: String,
+    priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
+    notes: String
 });
 
 const DemoRequest = mongoose.model("DemoRequest", demoRequestSchema);
@@ -190,6 +208,60 @@ const loginUser = async (Model, req, res, dashboardView) => {
 // -------------------------
 // API Routes
 // -------------------------
+
+// Get blood requests matching donor's blood group and state from demorequests collection
+app.get('/api/demo-request', async (req, res) => {
+    try {
+        const { bloodGroup, state } = req.query;
+        
+        // Log the incoming request for debugging
+        console.log('Fetching demo requests with:', { bloodGroup, state });
+        
+        if (!bloodGroup || !state) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Blood group and state are required' 
+            });
+        }
+
+        // Build the query to find matching requests
+        const query = {
+            status: 'pending',
+            $or: [
+                // Match if blood group matches exactly and state matches
+                { bloodGroup: bloodGroup.toUpperCase(), state: state },
+                // Or if blood group is O- (universal donor) and state matches
+                { bloodGroup: 'O-', state: state },
+                // Or if blood group is O+ (universal donor for +ve) and state matches
+                { bloodGroup: 'O+', state: state, $or: [
+                    { bloodGroup: { $regex: /\+$/, $options: 'i' } },
+                    { bloodGroup: 'AB+' }
+                ]}
+            ]
+        };
+
+        // Log the query for debugging
+        console.log('MongoDB Query:', JSON.stringify(query, null, 2));
+
+        // Find matching requests in the demorequests collection
+        const requests = await mongoose.connection.db.collection('demorequests')
+            .find(query)
+            .sort({ datetime: -1 }) // Most recent first
+            .limit(20) // Limit to 20 most recent requests
+            .toArray();
+
+        console.log(`Found ${requests.length} matching requests`);
+        res.json(requests);
+
+    } catch (error) {
+        console.error('Error fetching demo requests:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to fetch blood requests',
+            error: error.message 
+        });
+    }
+});
 app.get("/requests", async (req, res) => {
     try {
         const patientId = req.query.patientId;
@@ -922,27 +994,81 @@ app.get('/api/districts/:state', (req, res) => {
 
 app.post('/api/demo-request', async (req, res) => {
     try {
-        const { patientId, hospitalName, bloodGroup, units } = req.body;
+        const { 
+            patientId, 
+            patientName,
+            sourceHospitalName, // Patient's name as source
+            targetHospitalName,
+            hospitalName, // For backward compatibility
+            bloodGroup, 
+            units, 
+            requiredBy,
+            notes,
+            urgency,
+            requestType = 'patient',
+            status = 'pending',
+            contactPerson,
+            contactNumber
+        } = req.body;
 
-        const newDemoReq = new DemoRequest({
+        // Use targetHospitalName if provided, otherwise fall back to hospitalName for backward compatibility
+        const hospital = targetHospitalName || hospitalName;
+
+        if (!patientId || !hospital || !bloodGroup || !units) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Missing required fields' 
+            });
+        }
+
+        // Create new request with the updated schema
+        const newRequest = new DemoRequest({
+            // Patient information
             patientId,
-            hospitalName,
-            bloodGroup,
-            units,
-            datetime: new Date().toISOString(),
-            status: 'pending'
+            patientName: patientName || `Patient-${patientId.substring(0, 6)}`,
+            
+            // Source information (patient's name for patient requests)
+            sourceHospitalName: sourceHospitalName || patientName || `Patient-${patientId.substring(0, 6)}}`,
+            state: req.body.state || 'Unknown', // Add state field
+            
+            // Hospital information
+            targetHospitalName: hospital,
+            hospitalName: hospital, // For backward compatibility
+            
+            // Blood request details
+            bloodGroup: bloodGroup.toUpperCase(),
+            units: parseInt(units, 10),
+            requiredBy: requiredBy ? new Date(requiredBy) : null,
+            notes: notes || '',
+            urgency: urgency || 'medium',
+            
+            // Request metadata
+            requestType,
+            status,
+            contactPerson: contactPerson || patientName || `Patient-${patientId.substring(0, 6)}`,
+            contactNumber: contactNumber || 'Not provided',
+            datetime: new Date()
         });
 
-        await newDemoReq.save();
-        res.status(201).json({ success: true, request: newDemoReq });
-
+        await newRequest.save();
+        
+        res.status(201).json({
+            success: true,
+            message: 'Blood request submitted successfully',
+            request: newRequest
+        });
     } catch (error) {
-        console.error("Demo request save error:", error);
-        res.status(500).json({ success: false });
+        console.error('Error submitting blood request:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to submit blood request',
+            error: error.message
+        });
     }
 });
 
-app.get('/api/demo-request/:patientId', async (req, res) => {
+// Get demo requests for a patient
+app.get('/api/demo-request/patient/:patientId', async (req, res) => {
     try {
         const reqs = await DemoRequest.find({ patientId: req.params.patientId })
                                       .sort({ datetime: -1 });
@@ -953,29 +1079,174 @@ app.get('/api/demo-request/:patientId', async (req, res) => {
     }
 });
 
+// Get all demo requests (for admin or specific filtering on client side)
+app.get('/api/demo-requests', async (req, res) => {
+    try {
+        const { targetHospitalName } = req.query;
+        const query = {};
+        
+        // If targetHospitalName is provided, filter by it (case-insensitive)
+        if (targetHospitalName) {
+            query.targetHospitalName = { 
+                $regex: new RegExp('^' + targetHospitalName + '$', 'i') 
+            };
+        }
+        
+        const requests = await DemoRequest.find(query)
+            .select('sourceHospitalId sourceHospitalName targetHospitalId targetHospitalName bloodGroup units datetime status requestType contactPerson contactNumber priority notes')
+            .sort({ datetime: -1 });
+            
+        res.json(requests);
+    } catch (error) {
+        console.error('Error fetching demo requests:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to fetch demo requests',
+            error: error.message 
+        });
+    }
+});
+
+// Get demo requests for a specific hospital (by ID)
+app.get('/api/demo-request/hospital/:hospitalId', async (req, res) => {
+    try {
+        const requests = await DemoRequest.find({ 
+            hospitalId: req.params.hospitalId,
+            requestType: 'hospital'  // Only get hospital-type requests
+        }).sort({ datetime: -1 });
+        
+        res.json(requests);
+    } catch (error) {
+        console.error('Error fetching hospital requests:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to fetch hospital requests',
+            error: error.message 
+        });
+    }
+});
+
 // Patient -> Donor request (creates a demo request targeting a donor)
+// API endpoint for hospitals to request blood
+app.post('/api/request/hospital-blood', async (req, res) => {
+    try {
+        const { 
+            sourceHospitalId,
+            sourceHospitalName,
+            targetHospitalId,
+            targetHospitalName,
+            bloodGroup, 
+            units, 
+            contactPerson, 
+            contactNumber, 
+            priority,
+            notes 
+        } = req.body;
+
+        if (!sourceHospitalId || !sourceHospitalName || !targetHospitalId || !targetHospitalName || 
+            !bloodGroup || !units || !contactPerson || !contactNumber) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Missing required fields' 
+            });
+        }
+
+        const newRequest = new DemoRequest({
+            // Source hospital (the one making the request)
+            sourceHospitalId,
+            sourceHospitalName,
+            // Target hospital (the one receiving the request)
+            targetHospitalId,
+            targetHospitalName,
+            // Legacy fields (for backward compatibility)
+            hospitalId: sourceHospitalId,
+            hospitalName: sourceHospitalName,
+            // Other fields
+            bloodGroup: bloodGroup.toUpperCase(),
+            units: parseInt(units, 10),
+            contactPerson,
+            contactNumber,
+            priority: priority || 'medium',
+            notes: notes || '',
+            requestType: 'hospital',
+            status: 'pending'
+        });
+
+        await newRequest.save();
+
+        // Here you could add notification logic for admins/other hospitals
+
+        res.status(201).json({
+            success: true,
+            message: 'Blood request submitted successfully',
+            request: newRequest
+        });
+
+    } catch (error) {
+        console.error('Error creating hospital blood request:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Server error while processing blood request',
+            error: error.message 
+        });
+    }
+});
+
+// Handle donor requests from patients
 app.post('/api/request/donor', async (req, res) => {
     try {
-        const { patientId, donorId, donorName, bloodGroup, units } = req.body;
+        const { 
+            patientId, 
+            patientName,
+            sourceHospitalName, // Patient's name
+            state,              // Patient's state
+            donorId, 
+            donorName,
+            targetHospitalName, // Donor's name
+            bloodGroup, 
+            units,
+            requestType = 'donor',
+            status = 'pending',
+            contactPerson,
+            contactNumber,
+            notes = ''
+        } = req.body;
 
         if (!patientId || !donorId || !bloodGroup) {
             return res.status(400).json({ success: false, message: 'Missing required fields' });
         }
 
-        const newDemoReq = new DemoRequest({
+        // Create new request with all fields
+        const newRequest = new DemoRequest({
+            // Patient information
             patientId,
+            patientName: patientName || `Patient-${patientId.substring(0, 6)}`,
+            
+            // Source information (patient making the request)
+            sourceHospitalName: sourceHospitalName || patientName || `Patient-${patientId.substring(0, 6)}`,
+            state: state || 'Unknown',
+            
+            // Target information (donor)
             donorId,
-            donorName: donorName || '',
-            bloodGroup,
-            units: units || 1,
-            datetime: new Date().toISOString(),
-            status: 'pending'
+            donorName,
+            targetHospitalName: targetHospitalName || donorName,
+            
+            // Request details
+            bloodGroup: bloodGroup.toUpperCase(),
+            units: parseInt(units) || 1,
+            requestType,
+            status,
+            contactPerson: contactPerson || patientName || `Patient-${patientId.substring(0, 6)}`,
+            contactNumber: contactNumber || 'Not provided',
+            notes,
+            datetime: new Date()
         });
 
-        await newDemoReq.save();
+        await newRequest.save();
 
         console.log(`📨 Patient ${patientId} requested donor ${donorId} for ${bloodGroup}`);
 
+        res.status(201).json({ success: true, request: newRequest });
         res.status(201).json({ success: true, request: newDemoReq });
     } catch (err) {
         console.error('❌ Error creating donor request:', err);
@@ -983,20 +1254,36 @@ app.post('/api/request/donor', async (req, res) => {
     }
 });
 
-// Return donors for a given state (only available donors)
+// Return donors for a given state (all donors, with available ones first)
 app.get('/api/donors/state/:state', async (req, res) => {
     try {
         const state = req.params.state;
         if (!state) return res.status(400).send('State is required');
 
-        const donors = await Donor.find({ state: state, availabilityStatus: 'available' })
-            .select('fullName bloodGroup city state contactInfo')
-            .limit(100)
+        console.log(`🔍 Fetching donors for state: ${state}`);
+        
+        const donors = await Donor.find({ state: state })
+            .select('fullName bloodGroup city state contactInfo lastDonation availabilityStatus')
+            .sort({ 
+                availabilityStatus: -1, // Available donors first
+                lastDonation: -1        // Then sort by most recent donation date
+            })
             .lean();
 
+        console.log(`✅ Found ${donors.length} donors in ${state}`);
+        
+        // Log the first few donors for debugging
+        if (donors.length > 0) {
+            console.log('Sample donors:', donors.slice(0, 3).map(d => ({
+                name: d.fullName,
+                status: d.availabilityStatus,
+                lastDonation: d.lastDonation
+            })));
+        }
+        
         res.json(donors);
     } catch (err) {
         console.error('❌ Error fetching donors by state:', err);
-        res.status(500).send('Server error');
+        res.status(500).json({ error: 'Failed to fetch donors', details: err.message });
     }
 });

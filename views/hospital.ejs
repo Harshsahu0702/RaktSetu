@@ -243,6 +243,148 @@
             </div>
         </div>
 
+        <!-- Blood Requests Section -->
+        <div class="glass-card rounded-xl p-6 mb-8" x-data="bloodRequests">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-800">Incoming Blood Requests for <span x-text="currentHospitalName"></span></h2>
+                <button @click="fetchRequests" class="text-blue-600 hover:text-blue-800" :disabled="isLoading">
+                    <i class="fas fa-sync-alt" :class="{'animate-spin': isLoading}"></i>
+                    <span class="ml-1">Refresh</span>
+                </button>
+            </div>
+            
+            <!-- Loading State -->
+            <div x-show="isLoading" class="text-center py-8">
+                <i class="fas fa-spinner fa-spin text-blue-500 text-2xl"></i>
+                <p class="mt-2 text-gray-600">Loading requests...</p>
+            </div>
+            
+            <!-- Error State -->
+            <div x-show="error && !isLoading" class="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-circle text-red-500"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-red-700" x-text="error"></p>
+                        <button @click="fetchRequests" class="mt-2 text-sm text-red-600 hover:text-red-800 font-medium">
+                            Try again
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- No Requests -->
+            <div x-show="!isLoading && !error && requests.length === 0" class="text-center py-8">
+                <i class="fas fa-inbox text-gray-400 text-4xl mb-2"></i>
+                <p class="text-gray-500">No incoming blood requests</p>
+                <p class="text-sm text-gray-400 mt-1">Requests from other hospitals will appear here</p>
+            </div>
+            
+            <!-- Requests List -->
+            <div class="space-y-4">
+                <template x-for="request in requests" :key="request._id">
+                    <div class="bg-white rounded-lg shadow overflow-hidden border border-gray-100 hover:shadow-md transition-shadow duration-200">
+                        <div class="p-5">
+                            <div class="flex flex-col md:flex-row md:items-start md:justify-between">
+                                <div class="flex-1">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="text-lg font-semibold text-gray-900">
+                                                <template x-if="isValidHospitalName(request.sourceHospitalName)">
+                                                    <span x-text="'Request from: ' + request.sourceHospitalName"></span>
+                                                </template>
+                                                <template x-if="!isValidHospitalName(request.sourceHospitalName)">
+                                                    <span>New Blood Request Received</span>
+                                                </template>
+                                            </h3>
+                                            <p class="text-sm text-gray-500 mt-1" x-text="'Request ID: ' + request._id"></p>
+                                        </div>
+                                        <span 
+                                            x-text="request.status.charAt(0).toUpperCase() + request.status.slice(1)"
+                                            :class="{
+                                                'bg-yellow-100 text-yellow-800': request.status === 'pending',
+                                                'bg-green-100 text-green-800': request.status === 'approved',
+                                                'bg-red-100 text-red-800': request.status === 'rejected',
+                                                'px-3 py-1 rounded-full text-xs font-medium': true
+                                            }"
+                                        ></span>
+                                    </div>
+                                    
+                                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div class="bg-blue-50 p-3 rounded-lg">
+                                            <p class="text-xs font-medium text-blue-700 uppercase tracking-wider">Blood Group</p>
+                                            <p class="text-lg font-bold text-blue-900" x-text="request.bloodGroup || 'N/A'"></p>
+                                        </div>
+                                        
+                                        <div class="bg-green-50 p-3 rounded-lg">
+                                            <p class="text-xs font-medium text-green-700 uppercase tracking-wider">Units</p>
+                                            <p class="text-lg font-bold text-green-900" x-text="request.units || '0'"></p>
+                                        </div>
+                                        
+                                        <div class="bg-purple-50 p-3 rounded-lg">
+                                            <p class="text-xs font-medium text-purple-700 uppercase tracking-wider">Priority</p>
+                                            <p class="text-lg font-bold text-purple-900 capitalize" x-text="request.priority || 'Medium'"></p>
+                                        </div>
+                                        
+                                        <div class="bg-amber-50 p-3 rounded-lg">
+                                            <p class="text-xs font-medium text-amber-700 uppercase tracking-wider">Requested On</p>
+                                            <p class="text-sm font-medium text-amber-900" x-text="formatDate(request.datetime)"></p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-4">
+                                        <div class="flex items-center text-sm text-gray-600">
+                                            <i class="fas fa-user-circle text-gray-400 mr-2"></i>
+                                            <span x-text="request.contactPerson || 'No contact person'"></span>
+                                            <span class="mx-2 text-gray-300">•</span>
+                                            <i class="fas fa-phone-alt text-gray-400 mr-2"></i>
+                                            <span x-text="request.contactNumber || 'No contact number'"></span>
+                                        </div>
+                                    </div>
+                                    
+                                    <template x-if="request.notes">
+                                        <div class="mt-4 p-3 bg-gray-50 rounded-md border border-gray-100">
+                                            <p class="text-sm font-medium text-gray-700 mb-1">Additional Notes</p>
+                                            <p class="text-sm text-gray-600" x-text="request.notes"></p>
+                                        </div>
+                                    </template>
+                                    
+                                    <!-- Action Buttons -->
+                                    <div class="mt-4 flex flex-wrap gap-2" x-show="request.status === 'pending'">
+                                        <button 
+                                            @click="confirmStatusUpdate(request._id, 'approved')"
+                                            class="flex-1 md:flex-none flex items-center justify-center px-4 py-2 bg-green-100 text-green-700 text-sm font-medium rounded-md hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                            :disabled="isUpdating"
+                                        >
+                                            <i class="fas fa-check mr-2"></i>
+                                            <span>Approve</span>
+                                        </button>
+                                        <button 
+                                            @click="confirmStatusUpdate(request._id, 'rejected')"
+                                            class="flex-1 md:flex-none flex items-center justify-center px-4 py-2 bg-red-100 text-red-700 text-sm font-medium rounded-md hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                            :disabled="isUpdating"
+                                        >
+                                            <i class="fas fa-times mr-2"></i>
+                                            <span>Reject</span>
+                                        </button>
+                                        <button 
+                                            @click=""
+                                            class="flex-1 md:flex-none flex items-center justify-center px-4 py-2 bg-blue-100 text-blue-700 text-sm font-medium rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                            :disabled="isUpdating"
+                                        >
+                                            <i class="fas fa-phone-alt mr-2"></i>
+                                            <span>Call Now</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
         <!-- Blood Stock Overview -->
         <div class="glass-card rounded-xl p-6 mb-8">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
@@ -284,115 +426,6 @@
             </div>
         </div>
 
-        <!-- Blood Requests Section -->
-        <div id="blood-requests" class="glass-card rounded-xl p-6 mb-8">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-                <h2 class="text-xl font-bold text-gray-800 mb-4 md:mb-0">Blood Requests</h2>
-                <div class="flex space-x-2">
-                    <div class="relative">
-                        <select x-model="requestFilter" @change="filterRequests" class="appearance-none bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="all">All Requests</option>
-                            <option value="pending">Pending</option>
-                            <option value="accepted">Accepted</option>
-                            <option value="rejected">Rejected</option>
-                            <option value="completed">Completed</option>
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                            <i class="fas fa-chevron-down text-xs"></i>
-                        </div>
-                    </div>
-                    <div class="relative">
-                        <input 
-                            type="text" 
-                            placeholder="Search requests..." 
-                            class="search-input pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            x-model="searchQuery"
-                            @input="searchRequests"
-                        >
-                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                    </div>
-                </div>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Blood Group</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Units</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        <template x-for="request in filteredRequests" :key="request._id">
-                            <tr class="request-card hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                            <i class="fas fa-user text-blue-600"></i>
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900" x-text="request.patientName"></div>
-                                            <div class="text-sm text-gray-500" x-text="new Date(request.createdAt).toLocaleDateString()"></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-gray-900" x-text="request.bloodGroup"></div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900" x-text="request.units"></div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900" x-text="request.contactNumber || 'N/A'"></div>
-                                    <div class="text-sm text-gray-500" x-text="request.email || ''"></div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span 
-                                        class="status-badge" 
-                                        :class="{
-                                            'status-pending': request.status === 'pending',
-                                            'status-accepted': request.status === 'accepted',
-                                            'status-rejected': request.status === 'rejected',
-                                            'status-completed': request.status === 'completed'
-                                        }"
-                                        x-text="request.status.charAt(0).toUpperCase() + request.status.slice(1)"
-                                    ></span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <template x-if="request.status === 'pending'">
-                                        <div class="space-x-2">
-                                            <button @click="updateRequestStatus(request._id, 'accepted')" class="text-green-600 hover:text-green-900 mr-3">
-                                                <i class="fas fa-check-circle text-lg"></i>
-                                            </button>
-                                            <button @click="updateRequestStatus(request._id, 'rejected')" class="text-red-600 hover:text-red-900">
-                                                <i class="fas fa-times-circle text-lg"></i>
-                                            </button>
-                                        </div>
-                                    </template>
-                                    <template x-if="request.status === 'accepted'">
-                                        <div class="space-x-2">
-                                            <button @click="updateRequestStatus(request._id, 'completed')" class="text-blue-600 hover:text-blue-900">
-                                                Mark as Completed
-                                            </button>
-                                        </div>
-                                    </template>
-                                    <template x-if="request.status === 'completed' || request.status === 'rejected'">
-                                        <span class="text-gray-400">No actions available</span>
-                                    </template>
-                                </td>
-                            </tr>
-                        </template>
-                        <tr x-show="filteredRequests.length === 0">
-                            <td colspan="6" class="px-6 py-4 text-center text-gray-500">
-                                No blood requests found
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
             </div>
         </div>
 
@@ -586,68 +619,106 @@
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-semibold text-gray-900">Request Blood from <span x-text="selectedHospital?.name"></span></h3>
                             <button @click="showRequestModal = false" class="text-gray-400 hover:text-gray-500">
-                                <i class="fas fa-times"></i>
+                                <i class="fas fa-minus"></i>
                             </button>
                         </div>
-                        <form @submit.prevent="submitBloodRequest">
+                        <form @submit.prevent="submitRequest">
                             <div class="space-y-4">
-                                <div>
-                                    <p class="text-sm text-gray-700 mb-2">
+                                <!-- Hospital and Blood Group Info -->
+                                <div class="bg-blue-50 p-4 rounded-lg">
+                                    <p class="text-sm text-gray-700 mb-1">
                                         <span class="font-medium">Hospital:</span> 
-                                        <span x-text="selectedHospital?.name"></span>
+                                        <span x-text="selectedHospital?.name" class="font-semibold"></span>
                                     </p>
-                                    <p class="text-sm text-gray-700 mb-4">
-                                        <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>
-                                        <span x-text="selectedHospital?.vicinity || selectedHospital?.formatted_address"></span>
+                                    <p class="text-sm text-gray-700">
+                                        <span class="font-medium">Blood Group:</span> 
+                                        <span class="font-semibold" x-text="searchFilters.bloodGroup"></span>
                                     </p>
-                                    <div x-show="selectedHospital?.formatted_phone_number" class="text-sm text-gray-700 mb-4">
-                                        <i class="fas fa-phone text-gray-400 mr-1"></i>
-                                        <a :href="'tel:' + selectedHospital.formatted_phone_number" class="text-blue-600 hover:underline">
-                                            <span x-text="selectedHospital.formatted_phone_number"></span>
-                                        </a>
-                                    </div>
                                 </div>
-                                <div>
-                                    <label for="requestUnits" class="block text-sm font-medium text-gray-700 mb-1">Units Required</label>
+
+                                <!-- Request Form -->
+                                <div class="space-y-4">
+                                    <!-- Units Needed -->
                                     <div class="relative">
-                                        <button 
-                                            type="button" 
-                                            @click="requestUnits = Math.max(1, requestUnits - 1)" 
-                                            class="absolute left-0 top-0 bottom-0 px-3 text-gray-500 hover:text-gray-700"
-                                        >
-                                            <i class="fas fa-minus"></i>
-                                        </button>
-                                        <input 
-                                            type="number" 
-                                            id="requestUnits" 
-                                            x-model="requestUnits"
-                                            min="1"
-                                            :max="selectedHospital?.bloodStock[searchFilters.bloodGroup]?.units || 1"
-                                            class="w-full border border-gray-300 rounded-lg px-10 py-2 text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            required
-                                        >
-                                        <button 
-                                            type="button" 
-                                            @click="requestUnits++" 
-                                            class="absolute right-0 top-0 bottom-0 px-3 text-gray-500 hover:text-gray-700"
-                                            :disabled="requestUnits >= (selectedHospital?.bloodStock[searchFilters.bloodGroup]?.units || 1)"
-                                        >
-                                            <i class="fas fa-plus"></i>
-                                        </button>
+                                        <label for="requestUnits" class="block text-sm font-medium text-gray-700 mb-1">Number of Units <span class="text-red-500">*</span></label>
+                                        <div class="relative flex items-center">
+                                            <button 
+                                                type="button" 
+                                                @click="requestUnits > 1 ? requestUnits-- : null" 
+                                                class="absolute left-0 top-0 bottom-0 px-3 text-gray-500 hover:text-gray-700"
+                                                :disabled="requestUnits <= 1"
+                                            >
+                                                <i class="fas fa-minus"></i>
+                                            </button>
+                                            <input 
+                                                type="number" 
+                                                id="requestUnits" 
+                                                x-model="requestUnits"
+                                                min="1"
+                                                class="w-full border border-gray-300 rounded-lg px-10 py-2 text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                required
+                                            >
+                                            <button 
+                                                type="button" 
+                                                @click="requestUnits++" 
+                                                class="absolute right-0 top-0 bottom-0 px-3 text-gray-500 hover:text-gray-700"
+                                            >
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
                                     </div>
-                                    <p class="mt-1 text-xs text-gray-500">
-                                        Max available: <span x-text="selectedHospital?.bloodStock[searchFilters.bloodGroup]?.units || 0"></span> units
-                                    </p>
-                                </div>
-                                <div>
-                                    <label for="requestMessage" class="block text-sm font-medium text-gray-700 mb-1">Message (Optional)</label>
-                                    <textarea 
-                                        id="requestMessage" 
-                                        x-model="requestMessage"
-                                        rows="3"
-                                        class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Add any additional information or instructions..."
-                                    ></textarea>
+
+                                    <!-- Contact Information -->
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label for="contactPerson" class="block text-sm font-medium text-gray-700 mb-1">Contact Person <span class="text-red-500">*</span></label>
+                                            <input 
+                                                type="text" 
+                                                id="contactPerson" 
+                                                x-model="contactPerson"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                placeholder="Full name"
+                                                required
+                                            >
+                                        </div>
+                                        <div>
+                                            <label for="contactNumber" class="block text-sm font-medium text-gray-700 mb-1">Contact Number <span class="text-red-500">*</span></label>
+                                            <input 
+                                                type="tel" 
+                                                id="contactNumber" 
+                                                x-model="contactNumber"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                placeholder="Phone number"
+                                                required
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <!-- Priority -->
+                                    <div>
+                                        <label for="requestPriority" class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                                        <select 
+                                            id="requestPriority" 
+                                            x-model="requestPriority"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        >
+                                            <option value="low">Low</option>
+                                            <option value="medium" selected>Medium</option>
+                                            <option value="high">High</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Additional Notes -->
+                                    <div>
+                                        <label for="requestNotes" class="block text-sm font-medium text-gray-700 mb-1">Additional Notes</label>
+                                        <textarea 
+                                            id="requestNotes" 
+                                            x-model="requestNotes"
+                                            rows="3"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            placeholder="Any additional information about this request..."
+                                        ></textarea>
+                                    </div>
                                 </div>
                             </div>
                             <div class="mt-6 flex justify-end space-x-3">
@@ -660,10 +731,10 @@
                                 </button>
                                 <button 
                                     type="submit" 
-                                    class="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                    :disabled="isSubmitting"
+                                    class="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                                    :disabled="isSubmitting || !requestUnits || !contactPerson || !contactNumber"
                                 >
-                                    <span x-text="isSubmitting ? 'Sending...' : 'Send Request'"></span>
+                                    <span x-text="isSubmitting ? 'Submitting...' : 'Submit Request'"></span>
                                 </button>
                             </div>
                         </form>
@@ -905,10 +976,19 @@
     <script>
         function hospitalDashboard() {
             return {
+                // Store current hospital name from the welcome banner
+                currentHospitalName: '<%= user.hospitalName %>',
                 // UI State
                 mobileMenuOpen: false,
                 showUpdateStockModal: false,
                 showDonationModal: false,
+                showRequestModal: false,
+                selectedHospital: null,
+                requestUnits: 1,
+                contactPerson: '',
+                contactNumber: '',
+                requestPriority: 'medium',
+                requestNotes: '',
                 isUpdating: false,
                 showConfirmModal: false,
                 showRequestModal: false,
@@ -1648,6 +1728,86 @@
                     this.markers = [];
                 },
                 
+                // Open request modal for a specific hospital
+                openRequestModal(hospital) {
+                    this.selectedHospital = hospital;
+                    this.requestUnits = 1;
+                    this.contactPerson = '';
+                    this.contactNumber = '';
+                    this.requestPriority = 'medium';
+                    this.requestNotes = '';
+                    this.showRequestModal = true;
+                },
+
+                // Submit blood request to another hospital
+                async submitRequest() {
+                    try {
+                        if (!this.selectedHospital || !this.searchFilters.bloodGroup || !this.requestUnits || !this.contactPerson || !this.contactNumber) {
+                            this.showError('Please fill in all required fields');
+                            return;
+                        }
+
+                        // Get the current hospital (source) details from the template
+                        const sourceHospitalId = '<%= user._id %>';
+                        const sourceHospitalName = '<%= user.hospitalName %>';
+
+                        // Get the target hospital details from the selected hospital
+                        const targetHospitalId = this.selectedHospital.place_id;
+                        const targetHospitalName = this.selectedHospital.name;
+
+                        // Prepare the request data with both source and target hospital info
+                        const requestData = {
+                            sourceHospitalId,
+                            sourceHospitalName,
+                            targetHospitalId,
+                            targetHospitalName,
+                            bloodGroup: this.searchFilters.bloodGroup,
+                            units: this.requestUnits,
+                            contactPerson: this.contactPerson,
+                            contactNumber: this.contactNumber,
+                            priority: this.requestPriority,
+                            notes: this.requestNotes
+                        };
+
+                        // Show loading state
+                        this.isSubmitting = true;
+
+                        // Send the request to the server
+                        const response = await fetch('/api/request/hospital-blood', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(requestData)
+                        });
+
+                        const result = await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(result.message || 'Failed to submit blood request');
+                        }
+
+                        // Show success message
+                        this.showSuccess('Blood request submitted successfully!');
+                        
+                        // Close the modal
+                        this.showRequestModal = false;
+                        
+                        // Reset form
+                        this.requestUnits = 1;
+                        this.contactPerson = '';
+                        this.contactNumber = '';
+                        this.requestPriority = 'medium';
+                        this.requestNotes = '';
+
+                    } catch (error) {
+                        console.error('Error submitting blood request:', error);
+                        this.showError(error.message || 'Failed to submit blood request. Please try again.');
+                    } finally {
+                        this.isSubmitting = false;
+                    }
+                },
+
                 // Search for hospitals using OpenStreetMap's Nominatim
                 async searchHospitals() {
                     if (!this.searchFilters.bloodGroup) {
@@ -1730,9 +1890,67 @@
                 },
 
                 async submitBloodRequest() {
-                    if (!this.selectedHospital || !this.searchFilters.bloodGroup) {
-                        this.showError('Invalid request');
-                        return;
+                    try {
+                        if (!this.selectedHospital || !this.searchFilters.bloodGroup || !this.requestUnits) {
+                            this.showError('Please fill in all required fields');
+                            return;
+                        }
+
+                        // Get the current hospital details from the template
+                        const hospitalId = '<%= user._id %>';
+                        const hospitalName = '<%= user.hospitalName %>';
+
+                        // Prepare the request data
+                        const requestData = {
+                            hospitalId,
+                            hospitalName,
+                            bloodGroup: this.searchFilters.bloodGroup,
+                            units: this.requestUnits,
+                            contactPerson: this.contactPerson || '',
+                            contactNumber: this.contactNumber || '',
+                            priority: this.requestPriority || 'medium',
+                            notes: this.requestNotes || ''
+                        };
+
+                        // Show loading state
+                        this.isLoading = true;
+
+                        // Send the request to the server
+                        const response = await fetch('/api/request/hospital-blood', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(requestData)
+                        });
+
+                        const result = await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(result.message || 'Failed to submit blood request');
+                        }
+
+                        // Show success message
+                        this.showSuccess('Blood request submitted successfully!');
+                        
+                        // Close the modal
+                        this.showRequestModal = false;
+                        
+                        // Reset form
+                        this.requestUnits = '';
+                        this.contactPerson = '';
+                        this.contactNumber = '';
+                        this.requestPriority = 'medium';
+                        this.requestNotes = '';
+                        
+                        // Optionally refresh the requests list
+                        this.fetchBloodRequests();
+
+                    } catch (error) {
+                        console.error('Error submitting blood request:', error);
+                        this.showError(error.message || 'Failed to submit blood request. Please try again.');
+                    } finally {
+                        this.isLoading = false;
                     }
                     
                     if (this.requestUnits < 1) {
@@ -1787,6 +2005,61 @@
                 }
             };
         }
+
+        // Blood Requests Component
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('bloodRequests', () => ({
+                // Store current hospital name
+                currentHospitalName: '<%= user.hospitalName %>',
+                requests: [],
+                isLoading: false,
+                error: null,
+
+                async fetchRequests() {
+                    this.isLoading = true;
+                    this.error = null;
+                    
+                    try {
+                        // Fetch requests where target hospital is the current hospital
+                        const response = await fetch(`/api/demo-requests?targetHospitalName=${encodeURIComponent(this.currentHospitalName)}`);
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch requests');
+                        }
+                        
+                        const allRequests = await response.json();
+                        console.log('Fetched requests:', allRequests);
+                        
+                        // Filter out any test data or invalid entries
+                        this.requests = allRequests.filter(request => 
+                            request.targetHospitalName && 
+                            request.sourceHospitalName &&
+                            request.bloodGroup &&
+                            request.units > 0
+                        );
+                        
+                        console.log('Filtered requests:', this.requests);
+                        
+                    } catch (err) {
+                        console.error('Error fetching blood requests:', err);
+                        this.error = 'Failed to load requests. Please try again.';
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+
+                // Check if a hospital name is valid (not test data)
+                isValidHospitalName(name) {
+                    if (!name) return false;
+                    const lowerName = name.toLowerCase();
+                    return !['test', 'demo', 'example', 'txtxx'].some(term => lowerName.includes(term));
+                },
+
+                // Initialize component
+                init() {
+                    this.fetchRequests();
+                }
+            }));
+        });
     </script>
 </body>
 </html>
