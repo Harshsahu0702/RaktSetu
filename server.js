@@ -267,19 +267,11 @@ app.get("/requests", async (req, res) => {
         const patientId = req.query.patientId;
         if (!patientId) return res.status(400).send("Patient ID missing.");
 
-        // Try to load the patient from the DB. If not found, fall back to a harmless
-        // sample user object so the requests page can render during development/demo.
-        let user = await Patient.findById(patientId);
+        // Load the patient from the database
+        const user = await Patient.findById(patientId);
         if (!user) {
-            console.warn(`Patient with id ${patientId} not found — rendering requests page with a sample user for demo.`);
-            user = {
-                _id: patientId,
-                fullName: 'Test User',
-                email: 'test@example.com',
-                bloodGroup: 'O+',
-                city: 'Sample City',
-                contactInfo: ''
-            };
+            console.error(`Patient with id ${patientId} not found`);
+            return res.status(404).send('Patient not found');
         }
 
         const requests = await DemoRequest.find({ patientId })
@@ -938,23 +930,22 @@ app.get('/hospital/:id/requests', async (req, res) => {
 });
 
 // Patient Dashboard
-app.get("/patient", (req, res) => {
+app.get("/patient", async (req, res) => {
     try {
-        // For now, render with sample user data
-        // In a real app, you would get this from the session or database
-        const sampleUser = {
-            // Provide a mock _id so pages that read data-patient-id work during development
-            _id: '000000000000000000000001',
-            fullName: 'Test User',
-            email: 'test@example.com',
-            bloodGroup: 'O+',
-            city: 'Sample City',
-            state: 'Delhi',
-            contactInfo: '1234567890'
-        };
+        const patientId = req.query.patientId;
+        if (!patientId) {
+            return res.status(400).send('Patient ID is required');
+        }
+
+        // Get the patient from the database
+        const user = await Patient.findById(patientId);
+        if (!user) {
+            console.error(`Patient with id ${patientId} not found`);
+            return res.status(404).send('Patient not found');
+        }
     
         res.render("patient", { 
-            user: sampleUser,
+            user: user,
             title: 'Patient Dashboard - RaktSetu'
         });
     } catch (error) {

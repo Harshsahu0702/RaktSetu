@@ -7,15 +7,79 @@
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+    <!-- Contact Modal -->
+    <div id="contactModal" class="modal">
+        <div class="modal-content" style="max-width: 400px; padding: 0; border-radius: 12px; overflow: hidden; border: 2px solid #e53935;">
+            <div class="modal-header" style="background: #e53935; padding: 1.25rem; color: white;">
+                <h2 style="margin: 0; font-size: 1.5rem;">Contact Me</h2>
+                <button class="close-modal" aria-label="Close" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.5rem; padding: 0 0.75rem; height: 36px; border-radius: 50%; cursor: pointer;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem; text-align: center; background: #fff9f9;">
+                <div style="margin-bottom: 1.5rem; padding: 1rem; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                        <div style="background: #ffebee; padding: 0.75rem; border-radius: 50%;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e53935" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                        </div>
+                        <div style="text-align: left;">
+                            <h3 style="color: #b71c1c; margin: 0 0 0.25rem 0; font-size: 0.9rem; font-weight: 600;">EMAIL</h3>
+                            <a href="mailto:harshsahu10072006@gmail.com" style="color: #e53935; text-decoration: none; font-size: 1rem; word-break: break-all;">harshsahu10072006@gmail.com</a>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="background: #ffebee; padding: 0.75rem; border-radius: 50%;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e53935" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                            </svg>
+                        </div>
+                        <div style="text-align: left;">
+                            <h3 style="color: #b71c1c; margin: 0 0 0.25rem 0; font-size: 0.9rem; font-weight: 600;">PHONE</h3>
+                            <a href="tel:+916203132092" style="color: #e53935; text-decoration: none; font-size: 1rem;">+91 620 313 2092</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div id="aboutModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>About Rakt-Setu</h2>
+                <button class="close-modal" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Rakt-Setu is a life-saving platform that bridges the gap between blood donors and those in urgent need. Our mission is to make blood donation and access simple, efficient, and reliable for everyone.</p>
+                
+                <h3>Our Vision</h3>
+                <p>To create a robust network of voluntary blood donors across communities, ensuring that no life is lost due to the unavailability of blood when it's needed most.</p>
+                
+                <h3>How We Help</h3>
+                <ul>
+                    <li>Connect donors with patients in need through our intelligent matching system</li>
+                    <li>Provide real-time blood availability status across partner hospitals and blood banks</li>
+                    <li>Facilitate easy donation scheduling with reminders and notifications</li>
+                    <li>Create awareness about the importance of regular blood donation</li>
+                    <li>Maintain a transparent and secure platform for all users</li>
+                </ul>
+                
+                <p class="text-center" style="margin-top: 2rem; font-style: italic; color: #718096;">
+                    Join us in our mission to save lives, one donation at a time.
+                </p>
+            </div>
+        </div>
+    </div>
+
     <nav>
-        <img src="https://www.nicepng.com/png/full/364-3647802_blood-symbol-png.png" alt="Logo" class="logo">
+        <img src="https://www.nicepng.com/png/full/117-1179838_blood-donation-camp-blood-donation-logo-png.png" alt="Logo" class="logo">
         <p>Rakt-Setu</p>
         <ul class="nav-list">
-            <a href="#">Banks</a>   
-            <a href="#">About</a>
-            <a href="#">Compaigns</a>
-            <a href="#">FAQ</a>
-            <a href="#">Contact</a>
+            <a href="#" id="aboutLink">About</a>
+            <a href="#how-it-works">How it works?</a>
+            <a href="#" id="contactLink">Contact Us!</a>
         </ul>
     </nav>
     <div class="hero-section">
@@ -40,83 +104,35 @@
     </div>
 
 
-<!-- Why Choose Rakt Setu Section -->
-<section class="why-choose-section">
-    <h2 class="section-title">Why Choose Rakt-Setu?</h2>
+<!-- How It Works Section -->
+<section id="how-it-works" class="why-choose-section">
+    <h2 class="section-title">How It Works?</h2>
     
     <div class="features-container">
         <div class="feature-card">
             <div class="feature-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                </svg>
-            </div>
-            <h3 class="feature-title">Easy Blood Donations</h3>
-            <p class="feature-description">Find the nearest donation center and schedule a donation in minutes.</p>
-        </div>
-
-        <div class="feature-card">
-            <div class="feature-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                </svg>
-            </div>
-            <h3 class="feature-title">Hospital Support</h3>
-            <p class="feature-description">Real-time blood inventory tracking and AI-powered shortage forecasting.</p>
-        </div>
-
-        <div class="feature-card">
-            <div class="feature-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
-            </div>
-            <h3 class="feature-title">Community Impact</h3>
-            <p class="feature-description">Join a lifesaving network where every donation creates ripples of hope.</p>
-        </div>
-    </div>
-</section>
-
-<!-- How It Works Section -->
-<section class="how-it-works-section">
-    <h2 class="section-title">How It Works?</h2>
-    
-    <div class="steps-container">
-        <div class="step-card">
-            <div class="step-number">1</div>
-            <div class="step-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
                 </svg>
             </div>
-            <h3 class="step-title">Step 1: Sign Up</h3>
-            <p class="step-description">Create your profile as a donor, healthcare provider, or patient in seconds</p>
-            <div class="step-connector"></div>
+            <h3 class="feature-title">Step 1: Sign Up</h3>
+            <p class="feature-description">Create your profile as a donor, healthcare provider, or patient in seconds</p>
         </div>
 
-        <div class="step-card">
-            <div class="step-number">2</div>
-            <div class="step-icon">
+        <div class="feature-card">
+            <div class="feature-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                     <polyline points="22 4 12 14.01 9 11.01"></polyline>
                 </svg>
             </div>
-            <h3 class="step-title">Step 2: Request or Donate</h3>
-            <p class="step-description">Hospitals post needs, donors schedule donations. AI matches supply</p>
-            <div class="step-connector"></div>
+            <h3 class="feature-title">Step 2: Request or Donate</h3>
+            <p class="feature-description">Hospitals post needs, donors schedule donations. AI matches supply</p>
         </div>
 
-        <div class="step-card">
-            <div class="step-number">3</div>
-            <div class="step-icon">
+        <div class="feature-card">
+            <div class="feature-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="1" y="3" width="15" height="13"></rect>
                     <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
@@ -124,11 +140,73 @@
                     <circle cx="18.5" cy="18.5" r="2.5"></circle>
                 </svg>
             </div>
-            <h3 class="step-title">Step 3: Save a Life</h3>
-            <p class="step-description">Automated logistics ensure timely delivery where it's needed most</p>
+            <h3 class="feature-title">Step 3: Save a Life</h3>
+            <p class="feature-description">Automated logistics ensure timely delivery where it's needed most</p>
         </div>
     </div>
 </section>
 
+
+    <script>
+        // Wait for the DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Contact Modal Functionality
+            const contactModal = document.getElementById('contactModal');
+            const contactBtn = document.getElementById('contactLink');
+            const contactClose = contactModal ? contactModal.querySelector('.close-modal') : null;
+
+            if (contactBtn && contactModal && contactClose) {
+                // Open contact modal
+                contactBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    contactModal.style.display = 'block';
+                    document.body.style.overflow = 'hidden';
+                });
+
+                // Close contact modal
+                contactClose.addEventListener('click', function() {
+                    contactModal.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                });
+
+                // Close when clicking outside
+                window.addEventListener('click', function(e) {
+                    if (e.target === contactModal) {
+                        contactModal.style.display = 'none';
+                        document.body.style.overflow = 'auto';
+                    }
+                });
+            }
+            // Get the about modal elements
+            const aboutModal = document.getElementById('aboutModal');
+            const aboutBtn = document.getElementById('aboutLink');
+            const aboutClose = aboutModal ? aboutModal.querySelector('.close-modal') : null;
+
+            if (aboutBtn && aboutModal && aboutClose) {
+                // When user clicks on About, open the modal
+                aboutBtn.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    aboutModal.style.display = 'block';
+                    document.body.style.overflow = 'hidden';
+                });
+
+                // When user clicks on (x), close the modal
+                aboutClose.addEventListener('click', function() {
+                    aboutModal.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                });
+
+                // When user clicks anywhere outside of the modal, close it
+                window.addEventListener('click', function(event) {
+                    if (event.target === aboutModal) {
+                        aboutModal.style.display = 'none';
+                        document.body.style.overflow = 'auto';
+                    }
+                });
+            } else {
+                console.error('Could not find one or more modal elements');
+            }
+        });
+    </script>
 </body>
 </html>

@@ -343,10 +343,6 @@
                     <a href="/requests?patientId=<%= user._id %>" class="bg-white text-red-600 px-6 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-red-500">
                         View Requests
                     </a>
-                    <button id="sosBtn"
-                        class="bg-red-700 text-white px-6 py-2 rounded-lg font-medium hover:bg-red-800 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-red-600 animate-pulse">
-                        <i class="fas fa-bell"></i> SOS Request
-                    </button>
                 </div>
             </div>
         </div>
@@ -472,41 +468,6 @@
             </div>
         </div>
 
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
-            <!-- Approved Requests -->
-            <div class="glass-card rounded-xl p-6 animate-slide-up" style="animation-delay: 0.3s;">
-                <div class="flex items-center">
-                    <div class="p-3 rounded-lg bg-green-100 text-green-600 mr-4">
-                        <i class="fas fa-check-circle text-xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500">Approved Requests</p>
-                        <h3 class="text-2xl font-bold text-gray-800">5</h3>
-                    </div>
-                </div>
-                <div class="mt-4 flex items-center text-sm text-green-600">
-                    <i class="fas fa-arrow-up mr-1"></i>
-                    <span>1 new today</span>
-                </div>
-            </div>
-
-            <!-- Total Requests -->
-            <div class="glass-card rounded-xl p-6 animate-slide-up" style="animation-delay: 0.4s;">
-                <div class="flex items-center">
-                    <div class="p-3 rounded-lg bg-blue-100 text-blue-600 mr-4">
-                        <i class="fas fa-history text-xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500">Total Requests</p>
-                        <h3 class="text-2xl font-bold text-gray-800">12</h3>
-                    </div>
-                </div>
-                <div class="mt-4">
-                    <a href="/requests?patientId=<%= user._id %>" class="text-sm text-blue-600 hover:underline">View history</a>
-                </div>
-            </div>
-        </div>
 
         <!-- Donors Results -->
         <div id="donors-results" class="mt-6 space-y-4">
@@ -750,35 +711,6 @@
                 });
             }
         });
-    </script>
-    <script>
-        const sosBtn = document.getElementById('sosBtn');
-        sosBtn.addEventListener('click', () => {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(async (position) => {
-                    const { latitude, longitude } = position.coords;
-                    const response = await fetch('/api/requests/sos', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            patientId: '<%= user._id %>',
-                            bloodGroup: '<%= user.bloodGroup %>',
-                            city: '<%= user.city %>',
-                            latitude,
-                            longitude
-                        })
-                    });
-                    const data = await response.json();
-                    alert(data.message);
-                    fetchPatientRequests();
-                });
-            } else {
-                alert('Geolocation is not supported by this browser.');
-            }
-        });
-
     </script>
     <script>
         // Indian states with their major cities

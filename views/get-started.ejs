@@ -73,9 +73,10 @@
                     <a href="/" class="flex items-center group">
                         <div
                             class="bg-red-600 p-2 rounded-full transform group-hover:rotate-12 transition-all duration-300">
-                            <img src="https://www.nicepng.com/png/full/364-3647802_blood-symbol-png.png" alt="Logo"
+                           <!-- https://www.nicepng.com/png/full/364-3647802_blood-symbol-png.png -->
+                            <img src="https://www.nicepng.com/png/full/117-1179838_blood-donation-camp-blood-donation-logo-png.png" alt="Logo"
                                 class="h-10 w-10">
-                        </div>
+                        </div>`
                         <span class="ml-3 text-2xl font-bold text-gray-800 tracking-tight">Rakt-Setu</span>
                     </a>
                 </div>
@@ -240,7 +241,23 @@
                             <input type="email" name="email" id="signup-email" class="mt-1 shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3" placeholder="you@example.com" required>
                         </div>
                         
-                        <!-- Placeholder for role-specific fields -->
+                        <!-- State and City Fields -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="state" class="block text-sm font-medium text-gray-700">State</label>
+                                <select id="state" name="state" onchange="updateCities()" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md" required>
+                                    <option value="" disabled selected>Select State</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="city" class="block text-sm font-medium text-gray-700">City</label>
+                                <select id="city" name="city" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md" required disabled>
+                                    <option value="" disabled selected>Select City</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Placeholder for other role-specific fields -->
                         <div id="roleSpecificFields" class="space-y-4"></div>
 
                         <div>
@@ -378,14 +395,6 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">State</label>
-                        <input type="text" name="state" class="${inputClasses}" placeholder="Your State" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">City</label>
-                        <input type="text" name="city" class="${inputClasses}" placeholder="Your City" required>
-                    </div>
-                    <div>
                         <label class="block text-sm font-medium text-gray-700">Contact Info</label>
                         <input type="text" name="contactInfo" class="${inputClasses}" placeholder="Your Phone Number" required>
                     </div>
@@ -404,14 +413,6 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Full Address</label>
                         <input type="text" name="address" class="${inputClasses}" placeholder="123 Main St" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">State</label>
-                        <input type="text" name="state" class="${inputClasses}" placeholder="State" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">City</label>
-                        <input type="text" name="city" class="${inputClasses}" placeholder="City" required>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Pincode</label>
@@ -516,6 +517,56 @@
         });
 
     </script>
+
+    <!-- State and City Dropdown Script -->
+    <script>
+        // Populate states dropdown on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const stateSelect = document.getElementById('state');
+            const citySelect = document.getElementById('city');
+            
+            // Add states to the dropdown
+            Object.keys(stateDistricts).sort().forEach(state => {
+                const option = document.createElement('option');
+                option.value = state;
+                option.textContent = state;
+                stateSelect.appendChild(option);
+            });
+            
+            // Enable city dropdown when state is selected
+            stateSelect.addEventListener('change', updateCities);
+        });
+        
+        // Update cities based on selected state
+        function updateCities() {
+            const stateSelect = document.getElementById('state');
+            const citySelect = document.getElementById('city');
+            const selectedState = stateSelect.value;
+            
+            // Clear previous cities
+            citySelect.innerHTML = '<option value="" disabled selected>Select City</option>';
+            
+            if (selectedState) {
+                // Enable city dropdown
+                citySelect.disabled = false;
+                
+                // Add cities for selected state
+                const cities = stateDistricts[selectedState];
+                cities.forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city;
+                    option.textContent = city;
+                    citySelect.appendChild(option);
+                });
+            } else {
+                // Disable city dropdown if no state is selected
+                citySelect.disabled = true;
+            }
+        }
+    </script>
+
+    <!-- Include the districts.js file -->
+    <script src="/js/districts.js"></script>
 
     <!-- Hero Section -->
     <div class="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
