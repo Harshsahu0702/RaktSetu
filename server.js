@@ -371,10 +371,13 @@ app.use('/', requestsRoutes);
 // Patient Signup
 app.post("/api/patient/signup", async (req, res) => {
     try {
+        console.log("📝 Signup Request Body:", req.body); // LOGGING ADDED
         const { fullName, email, password, confirmPassword, bloodGroup, city, contactInfo, state } = req.body;
 
-        if (!fullName || !email || !password || !bloodGroup || !city || !contactInfo || !state)
+        if (!fullName || !email || !password || !bloodGroup || !city || !contactInfo || !state) { // CHECKING ALL FIELDS
+            console.log("❌ Missing fields:", { fullName, email, password, bloodGroup, city, contactInfo, state });
             return res.status(400).send("All fields are required.");
+        }
 
         if (password !== confirmPassword)
             return res.status(400).send("Passwords do not match.");
