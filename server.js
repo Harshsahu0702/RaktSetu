@@ -103,7 +103,8 @@ const patientSchema = new mongoose.Schema({
             enum: ['Point']
         },
         coordinates: {
-            type: [Number]
+            type: [Number],
+            default: undefined
         }
     }
 });
@@ -134,6 +135,7 @@ const hospitalSchema = new mongoose.Schema({
         },
         coordinates: {
             type: [Number],
+            default: undefined
         }
     },
     locationUpdateAttempts: { type: Number, default: 3 },
