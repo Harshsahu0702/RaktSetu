@@ -236,31 +236,40 @@ app.get('/logout', (req, res) => {
 // Get blood requests matching donor's blood group and state from demorequests collection
 app.get('/api/demo-request', async (req, res) => {
     try {
-        const { bloodGroup, state } = req.query;
+        const { bloodGroup, state, donorId } = req.query;
 
         // Log the incoming request for debugging
-        console.log('Fetching demo requests with:', { bloodGroup, state });
+        console.log('Fetching demo requests with:', { bloodGroup, state, donorId });
 
-        if (!bloodGroup || !state) {
+        if (!bloodGroup || !state || !donorId) {
             return res.status(400).json({
                 success: false,
-                message: 'Blood group and state are required'
+                message: 'Blood group, state, and donorId are required'
             });
         }
 
         // Build the query to find matching requests
         const query = {
-            status: 'pending',
+            status: { $in: ['pending', 'approved'] },
             $or: [
-                // Match if blood group matches exactly and state matches
-                { bloodGroup: bloodGroup.toUpperCase(), state: state },
-                // Or if blood group is O- (universal donor) and state matches
-                { bloodGroup: 'O-', state: state },
-                // Or if blood group is O+ (universal donor for +ve) and state matches
+                // 1. Direct Requests: Specifically assigned to this donor
+                { donorId: donorId },
+
+                // 2. Broadcast Requests: 'patient' type, matching blood group logic, NO specific donor assigned yet
                 {
-                    bloodGroup: 'O+', state: state, $or: [
-                        { bloodGroup: { $regex: /\+$/, $options: 'i' } },
-                        { bloodGroup: 'AB+' }
+                    requestType: 'patient',
+                    state: state,
+                    donorId: { $exists: false }, // Only unassigned requests
+                    $or: [
+                        { bloodGroup: bloodGroup.toUpperCase() },
+                        { bloodGroup: 'O-' },
+                        {
+                            bloodGroup: 'O+',
+                            $or: [
+                                { bloodGroup: { $regex: /\+$/, $options: 'i' } },
+                                { bloodGroup: 'AB+' }
+                            ]
+                        }
                     ]
                 }
             ]
@@ -1578,7 +1587,7 @@ app.post('/api/request/donor', async (req, res) => {
         console.log(`📨 Patient ${patientId} requested donor ${donorId} for ${bloodGroup}`);
 
         res.status(201).json({ success: true, request: newRequest });
-        res.status(201).json({ success: true, request: newDemoReq });
+
     } catch (err) {
         console.error('❌ Error creating donor request:', err);
         res.status(500).json({ success: false, message: 'Server error' });
