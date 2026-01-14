@@ -37,10 +37,7 @@ app.set("views", path.join(__dirname, "views"));
 // MongoDB Connection
 // -------------------------
 mongoose
-    .connect("mongodb+srv://nikhilkr8967_db_user:hfFheMMvE5vKdfIb@cluster0.hfn2zxu.mongodb.net/", {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-    })
+    .connect(process.env.MONGO_URI)
     .then(() => console.log("✅ MongoDB connected successfully"))
     .catch((err) => console.error("❌ MongoDB connection error:", err));
 
