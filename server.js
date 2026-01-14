@@ -37,7 +37,7 @@ app.set("views", path.join(__dirname, "views"));
 // MongoDB Connection
 // -------------------------
 mongoose
-    .connect(process.env.MONGO_URI)
+    .connect(process.env.MONGODB_URI)
     .then(() => console.log("✅ MongoDB connected successfully"))
     .catch((err) => console.error("❌ MongoDB connection error:", err));
 
