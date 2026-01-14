@@ -10,6 +10,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const path = require("path");
 const fetch = require('node-fetch');
+const session = require('express-session');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,6 +21,12 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(session({
+    secret: 'raktsetu_secure_session_secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+})); // Session Middleware
 app.use(express.static(path.join(__dirname, "public"))); // For static assets (CSS/JS/images)
 
 // Set EJS as the templating engine
@@ -30,12 +37,12 @@ app.set("views", path.join(__dirname, "views"));
 // MongoDB Connection
 // -------------------------
 mongoose
-  .connect("mongodb+srv://nikhilkr8967_db_user:hfFheMMvE5vKdfIb@cluster0.hfn2zxu.mongodb.net/", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("✅ MongoDB connected successfully"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+    .connect("mongodb+srv://nikhilkr8967_db_user:hfFheMMvE5vKdfIb@cluster0.hfn2zxu.mongodb.net/", {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    })
+    .then(() => console.log("✅ MongoDB connected successfully"))
+    .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 // -------------------------
 // Schemas & Models
@@ -44,7 +51,7 @@ const demoRequestSchema = new mongoose.Schema({
     // Patient information
     patientId: String,
     patientName: String,
-    
+
     // Source information (for patient requests, this will be the patient's name)
     sourceHospitalId: String,
     sourceHospitalName: String,  // Will store patient's name for patient requests
@@ -73,77 +80,77 @@ const DemoRequest = mongoose.model("DemoRequest", demoRequestSchema);
 
 // Base user schema for common fields
 const userSchema = new mongoose.Schema({
-  fullName: { type: String, required: true, trim: true, minlength: 3 },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    lowercase: true,
-    trim: true,
-    match: [/^\S+@\S+\.\S+$/, "Invalid email format"],
-  },
-  password: { type: String, required: true, minlength: 8 },
-  role: { type: String, enum: ['patient', 'donor', 'hospital', 'admin'], required: true }
+    fullName: { type: String, required: true, trim: true, minlength: 3 },
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+        lowercase: true,
+        trim: true,
+        match: [/^\S+@\S+\.\S+$/, "Invalid email format"],
+    },
+    password: { type: String, required: true, minlength: 8 },
+    role: { type: String, enum: ['patient', 'donor', 'hospital', 'admin'], required: true }
 });
 
 // Patient Schema
 const patientSchema = new mongoose.Schema({
-  ...userSchema.obj,
-  bloodGroup: { type: String, required: true },
-  city: { type: String, required: true },
-  contactInfo: { type: String, required: true },
-  requests: [{ type: mongoose.Schema.Types.ObjectId, ref: 'BloodRequest' }],
-  location: {
-    type: {
-      type: String,
-      enum: ['Point']
-    },
-    coordinates: {
-      type: [Number]
+    ...userSchema.obj,
+    bloodGroup: { type: String, required: true },
+    city: { type: String, required: true },
+    contactInfo: { type: String, required: true },
+    requests: [{ type: mongoose.Schema.Types.ObjectId, ref: 'BloodRequest' }],
+    location: {
+        type: {
+            type: String,
+            enum: ['Point']
+        },
+        coordinates: {
+            type: [Number]
+        }
     }
-  }
 });
 
 // Donor Schema
 const donorSchema = new mongoose.Schema({
-  ...userSchema.obj,
-  bloodGroup: { type: String, required: true },
+    ...userSchema.obj,
+    bloodGroup: { type: String, required: true },
     city: { type: String, required: true },
     state: { type: String, required: true },
-  contactInfo: { type: String, required: true },
-  availabilityStatus: { type: String, enum: ['available', 'unavailable'], default: 'available' },
-  donationHistory: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Donation' }]
+    contactInfo: { type: String, required: true },
+    availabilityStatus: { type: String, enum: ['available', 'unavailable'], default: 'available' },
+    donationHistory: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Donation' }]
 });
 
 // Hospital Schema
 const hospitalSchema = new mongoose.Schema({
-  ...userSchema.obj,
-  hospitalName: { type: String, required: true },
-  address: { type: String, required: true },
-  city: { type: String, required: true },
-  pincode: { type: String, required: true },
-  contactInfo: { type: String, required: true },
-  location: {
-    type: {
-      type: String,
-      enum: ['Point'],
+    ...userSchema.obj,
+    hospitalName: { type: String, required: true },
+    address: { type: String, required: true },
+    city: { type: String, required: true },
+    pincode: { type: String, required: true },
+    contactInfo: { type: String, required: true },
+    location: {
+        type: {
+            type: String,
+            enum: ['Point'],
+        },
+        coordinates: {
+            type: [Number],
+        }
     },
-    coordinates: {
-      type: [Number],
-    }
-  },
-  locationUpdateAttempts: { type: Number, default: 3 },
-  bloodStock: {
-    'A+': { type: Number, default: 0 },
-    'A-': { type: Number, default: 0 },
-    'B+': { type: Number, default: 0 },
-    'B-': { type: Number, default: 0 },
-    'AB+': { type: Number, default: 0 },
-    'AB-': { type: Number, default: 0 },
-    'O+': { type: Number, default: 0 },
-    'O-': { type: Number, default: 0 }
-  },
-  isVerified: { type: Boolean, default: false }
+    locationUpdateAttempts: { type: Number, default: 3 },
+    bloodStock: {
+        'A+': { type: Number, default: 0 },
+        'A-': { type: Number, default: 0 },
+        'B+': { type: Number, default: 0 },
+        'B-': { type: Number, default: 0 },
+        'AB+': { type: Number, default: 0 },
+        'AB-': { type: Number, default: 0 },
+        'O+': { type: Number, default: 0 },
+        'O-': { type: Number, default: 0 }
+    },
+    isVerified: { type: Boolean, default: false }
 });
 
 hospitalSchema.index({ location: '2dsphere' });
@@ -155,12 +162,12 @@ const adminSchema = new mongoose.Schema({
 
 // Blood Request Schema
 const bloodRequestSchema = new mongoose.Schema({
-  patient: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
-  hospital: { type: mongoose.Schema.Types.ObjectId, ref: 'Hospital', required: true },
-  bloodGroup: { type: String, required: true },
-  units: { type: Number, required: true },
-  status: { type: String, enum: ['pending', 'approved', 'rejected', 'delivering', 'completed'], default: 'pending' },
-  createdAt: { type: Date, default: Date.now }
+    patient: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
+    hospital: { type: mongoose.Schema.Types.ObjectId, ref: 'Hospital', required: true },
+    bloodGroup: { type: String, required: true },
+    units: { type: Number, required: true },
+    status: { type: String, enum: ['pending', 'approved', 'rejected', 'delivering', 'completed'], default: 'pending' },
+    createdAt: { type: Date, default: Date.now }
 });
 
 // Donation Application Schema
@@ -183,27 +190,45 @@ const Donation = mongoose.model("Donation", donationApplicationSchema);
 // Helper Functions
 // -------------------------
 const loginUser = async (Model, req, res, dashboardView) => {
-  try {
-    const { loginEmail, loginPassword } = req.body;
+    try {
+        const { loginEmail, loginPassword } = req.body;
 
-    if (!loginEmail || !loginPassword)
-      return res.status(400).send("Email and password required.");
+        if (!loginEmail || !loginPassword)
+            return res.status(400).send("Email and password required.");
 
-    const user = await Model.findOne({ email: loginEmail });
-    if (!user) return res.status(400).send("User not found.");
+        const user = await Model.findOne({ email: loginEmail });
+        if (!user) return res.status(400).send("User not found.");
 
-    const isMatch = await bcrypt.compare(loginPassword, user.password);
-    if (!isMatch) return res.status(400).send("Invalid credentials.");
+        const isMatch = await bcrypt.compare(loginPassword, user.password);
+        if (!isMatch) return res.status(400).send("Invalid credentials.");
 
-    console.log(`✅ ${Model.modelName} logged in: ${user.email}`);
+        console.log(`✅ ${Model.modelName} logged in: ${user.email}`);
 
-    // Pass the entire user object to the template
-    res.render(dashboardView, { user: user });
-  } catch (err) {
-    console.error(`❌ ${Model.modelName} login error:`, err);
-    res.status(500).send("Server error");
-  }
+        // Set Session
+        req.session.userId = user._id;
+        req.session.role = user.role;
+
+        req.session.save(() => {
+            // Redirect based on role
+            if (user.role === 'donor') return res.redirect(`/donor-dashboard/${user._id}/dashboard`);
+            if (user.role === 'hospital') return res.redirect(`/hospital/${user._id}`);
+            if (user.role === 'patient') return res.redirect(`/patient/${user._id}`);
+
+            // Fallback for Admin or others
+            res.render(dashboardView, { user: user });
+        });
+    } catch (err) {
+        console.error(`❌ ${Model.modelName} login error:`, err);
+        res.status(500).send("Server error");
+    }
 };
+
+app.get('/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) console.error(err);
+        res.redirect('/');
+    });
+});
 
 // -------------------------
 // API Routes
@@ -213,14 +238,14 @@ const loginUser = async (Model, req, res, dashboardView) => {
 app.get('/api/demo-request', async (req, res) => {
     try {
         const { bloodGroup, state } = req.query;
-        
+
         // Log the incoming request for debugging
         console.log('Fetching demo requests with:', { bloodGroup, state });
-        
+
         if (!bloodGroup || !state) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Blood group and state are required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Blood group and state are required'
             });
         }
 
@@ -233,10 +258,12 @@ app.get('/api/demo-request', async (req, res) => {
                 // Or if blood group is O- (universal donor) and state matches
                 { bloodGroup: 'O-', state: state },
                 // Or if blood group is O+ (universal donor for +ve) and state matches
-                { bloodGroup: 'O+', state: state, $or: [
-                    { bloodGroup: { $regex: /\+$/, $options: 'i' } },
-                    { bloodGroup: 'AB+' }
-                ]}
+                {
+                    bloodGroup: 'O+', state: state, $or: [
+                        { bloodGroup: { $regex: /\+$/, $options: 'i' } },
+                        { bloodGroup: 'AB+' }
+                    ]
+                }
             ]
         };
 
@@ -255,13 +282,23 @@ app.get('/api/demo-request', async (req, res) => {
 
     } catch (error) {
         console.error('Error fetching demo requests:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Failed to fetch blood requests',
-            error: error.message 
+            error: error.message
         });
     }
 });
+app.get('/patient/:id', async (req, res) => {
+    try {
+        const user = await Patient.findById(req.params.id);
+        if (!user) return res.status(404).send("Patient not found");
+        res.render("patient", { user });
+    } catch (err) {
+        res.status(500).send("Server Error");
+    }
+});
+
 app.get("/requests", async (req, res) => {
     try {
         const patientId = req.query.patientId;
@@ -282,6 +319,38 @@ app.get("/requests", async (req, res) => {
     } catch (error) {
         console.error("❌ Error loading requests page:", error);
         res.status(500).send("Server error");
+    }
+});
+
+
+// Update Donor Donation Dates
+app.put('/api/donor/:id/update-donation', async (req, res) => {
+    try {
+        const { lastDonation } = req.body;
+        if (!lastDonation) return res.status(400).json({ success: false, message: 'Date required' });
+
+        const donor = await Donor.findById(req.params.id);
+        if (!donor) return res.status(404).json({ success: false, message: 'Donor not found' });
+
+        const lastDate = new Date(lastDonation);
+        const nextDate = new Date(lastDate);
+        nextDate.setDate(lastDate.getDate() + 90); // 90 days cooling period
+
+        donor.lastDonation = lastDate;
+        donor.nextDonationEligible = nextDate;
+
+        await donor.save();
+
+        res.json({
+            success: true,
+            message: 'Dates updated',
+            nextEligible: nextDate,
+            lastDonation: lastDate
+        });
+
+    } catch (error) {
+        console.error("❌ Error updating donor dates:", error);
+        res.status(500).json({ success: false, message: 'Server error' });
     }
 });
 
@@ -319,7 +388,10 @@ app.post("/api/patient/signup", async (req, res) => {
 
         await newPatient.save();
         console.log(`✅ New Patient registered: ${newPatient.email}`);
-        res.render("patient", { user: newPatient });
+
+        req.session.userId = newPatient._id;
+        req.session.role = 'patient';
+        req.session.save(() => res.redirect(`/patient/${newPatient._id}`));
     } catch (err) {
         console.error("❌ Patient signup error:", err);
         res.status(500).send("Server error");
@@ -354,7 +426,10 @@ app.post("/api/donor/signup", async (req, res) => {
 
         await newDonor.save();
         console.log(`✅ New Donor registered: ${newDonor.email}`);
-        res.render("donor", { user: newDonor });
+
+        req.session.userId = newDonor._id;
+        req.session.role = 'donor';
+        req.session.save(() => res.redirect(`/donor-dashboard/${newDonor._id}/dashboard`));
     } catch (err) {
         console.error("❌ Donor signup error:", err);
         res.status(500).send("Server error");
@@ -392,7 +467,10 @@ app.post("/api/hospital/signup", async (req, res) => {
 
         await newHospital.save();
         console.log(`✅ New Hospital registered: ${newHospital.email}`);
-        res.render("hospital", { user: newHospital });
+
+        req.session.userId = newHospital._id;
+        req.session.role = 'hospital';
+        req.session.save(() => res.redirect(`/hospital/${newHospital._id}`));
     } catch (err) {
         console.error("❌ Hospital signup error:", err);
         res.status(500).send("Server error");
@@ -404,11 +482,11 @@ app.post("/api/admin/signup", async (req, res) => {
     try {
         const { fullName, email, password, confirmPassword } = req.body;
         if (password !== confirmPassword) return res.status(400).send("Passwords do not match.");
-        
+
         const existing = await Admin.findOne({ email });
-                    await newDonor.save();
-                    console.log(`✅ New Donor registered: ${newDonor.email}`);
-                    res.render("donor", { user: newDonor });
+        await newDonor.save();
+        console.log(`✅ New Donor registered: ${newDonor.email}`);
+        res.render("donor", { user: newDonor });
         const newAdmin = new Admin({
             fullName,
             email,
@@ -425,7 +503,27 @@ app.post("/api/admin/signup", async (req, res) => {
 
 // Login Routes
 app.post("/api/patient/login", (req, res) => loginUser(Patient, req, res, "patient"));
-app.post("/api/donor/login", (req, res) => loginUser(Donor, req, res, "donor"));
+app.post("/api/donor/login", async (req, res) => {
+    try {
+        const { loginEmail, loginPassword } = req.body;
+        if (!loginEmail || !loginPassword) return res.status(400).send("Email and password required.");
+
+        const user = await Donor.findOne({ email: loginEmail });
+        if (!user) return res.status(400).send("User not found.");
+
+        const isMatch = await bcrypt.compare(loginPassword, user.password);
+        if (!isMatch) return res.status(400).send("Invalid credentials.");
+
+        // Redirect to new dashboard
+        req.session.userId = user._id;
+        req.session.role = 'donor';
+        req.session.save(() => res.redirect(`/donor-dashboard/${user._id}/dashboard`));
+
+    } catch (err) {
+        console.error("❌ Donor login error:", err);
+        res.status(500).send("Server error");
+    }
+});
 app.post("/api/hospital/login", (req, res) => loginUser(Hospital, req, res, "hospital"));
 // app.post("/api/admin/login", (req, res) => loginUser(Admin, req, res, "admin_dashboard")); // Admin dashboard view needed
 
@@ -503,7 +601,7 @@ app.post('/api/requests/new', async (req, res) => {
             }
         });
         await newRequest.save();
-        
+
         // Link the request to the patient
         await Patient.findByIdAndUpdate(patientId, { $push: { requests: newRequest._id } });
 
@@ -537,17 +635,16 @@ app.post('/api/requests/sos', async (req, res) => {
             }
         });
         await newRequest.save();
-        
+
         await Patient.findByIdAndUpdate(patientId, { $push: { requests: newRequest._id } });
 
         // Notify nearby donors and hospitals
         notifyDonorsAndHospitals(newRequest);
-        
+
         console.log(`🆘 New SOS Request created: ${newRequest._id} for ${bloodGroup} in ${city}`);
 
         res.status(201).json({ message: "SOS request sent successfully!", request: newRequest });
-    } catch (err)
- {
+    } catch (err) {
         console.error("❌ SOS request error:", err);
         res.status(500).send("Server error");
     }
@@ -566,7 +663,7 @@ app.get('/api/requests/patient/:patientId', async (req, res) => {
 // -------------------------
 // Smart Matching & Notification Logic
 // -------------------------
-const notifyDonorsAndHospitals = async (bloodRequest) => {  
+const notifyDonorsAndHospitals = async (bloodRequest) => {
     try {
         // Find available donors with the same blood group in the same city
         const matchingDonors = await Donor.find({
@@ -601,14 +698,14 @@ const notifyDonorsAndHospitals = async (bloodRequest) => {
 app.get('/api/hospitals/:hospitalId/blood-stock', async (req, res) => {
     try {
         const { hospitalId } = req.params;
-        
+
         // Find the hospital
         const hospital = await Hospital.findById(hospitalId).select('bloodStock');
-        
+
         if (!hospital) {
             return res.status(404).json({ error: 'Hospital not found' });
         }
-        
+
         // Ensure bloodStock exists and has all required fields
         const defaultStock = {
             'A+': { units: 0 },
@@ -620,10 +717,10 @@ app.get('/api/hospitals/:hospitalId/blood-stock', async (req, res) => {
             'O+': { units: 0 },
             'O-': { units: 0 }
         };
-        
+
         // Merge with default values to ensure all blood groups exist
         const bloodStock = { ...defaultStock, ...(hospital.bloodStock || {}) };
-        
+
         // Ensure each blood group has the correct structure
         Object.keys(bloodStock).forEach(group => {
             if (typeof bloodStock[group] === 'number') {
@@ -632,13 +729,13 @@ app.get('/api/hospitals/:hospitalId/blood-stock', async (req, res) => {
                 bloodStock[group] = { units: 0 };
             }
         });
-        
+
         res.json(bloodStock);
     } catch (err) {
         console.error('❌ Error fetching blood stock:', err);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to fetch blood stock',
-            details: err.message 
+            details: err.message
         });
     }
 });
@@ -682,7 +779,7 @@ app.post('/api/requests/update/:requestId', async (req, res) => {
 
         request.status = status;
         await request.save();
-        
+
         console.log(`✅ Request ${requestId} status updated to ${status}`);
         res.json(request);
     } catch (err) {
@@ -696,61 +793,61 @@ app.post('/api/stock/update/:hospitalId', async (req, res) => {
     try {
         const { bloodGroup, units } = req.body; // units can be positive or negative
         const { hospitalId } = req.params;
-        
+
         // Validate blood group
         const validBloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
         if (!validBloodGroups.includes(bloodGroup)) {
             return res.status(400).json({ error: 'Invalid blood group' });
         }
-        
+
         // Find the hospital first
         const hospital = await Hospital.findById(hospitalId);
         if (!hospital) {
             return res.status(404).json({ error: 'Hospital not found' });
         }
-        
+
         // Initialize bloodStock if it doesn't exist
         if (!hospital.bloodStock) {
             hospital.bloodStock = {};
         }
-        
+
         // Initialize the specific blood group if it doesn't exist
         if (typeof hospital.bloodStock[bloodGroup] !== 'object') {
             hospital.bloodStock[bloodGroup] = { units: 0 };
         }
-        
+
         // Calculate new units, ensuring it doesn't go below 0
         const currentUnits = hospital.bloodStock[bloodGroup].units || 0;
         const newUnits = currentUnits + units;
-        
+
         if (newUnits < 0) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Insufficient stock available',
                 currentStock: currentUnits,
                 requestedChange: units
             });
         }
-        
+
         // Update the specific blood group
         hospital.bloodStock[bloodGroup].units = newUnits;
-        
+
         // Mark the bloodStock field as modified to ensure it gets saved
         hospital.markModified('bloodStock');
-        
+
         // Save the updated hospital with the modified bloodStock
         const updatedHospital = await hospital.save();
-        
+
         if (!updatedHospital) {
             throw new Error('Failed to save hospital data');
         }
-        
+
         // Return the updated blood stock
         res.json(updatedHospital.bloodStock);
     } catch (err) {
         console.error("❌ Stock update error:", err);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to update blood stock',
-            details: err.message 
+            details: err.message
         });
     }
 });
@@ -760,42 +857,42 @@ app.put('/api/hospitals/:hospitalId/blood-stock', async (req, res) => {
     try {
         const { hospitalId } = req.params;
         const updatedStock = req.body;
-        
+
         console.log('📤 Received blood stock update request:', { hospitalId, updatedStock });
-        
+
         // Validate the request body structure
         const validBloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-        
+
         // Check if all required blood groups are present and have valid units
         const isValidUpdate = Object.entries(updatedStock).every(([group, data]) => {
             // Check if the group is valid and data is an object with units
-            return validBloodGroups.includes(group) && 
-                   data !== null && 
-                   typeof data === 'object' && 
-                   'units' in data &&
-                   !isNaN(parseInt(data.units)) && 
-                   parseInt(data.units) >= 0;
+            return validBloodGroups.includes(group) &&
+                data !== null &&
+                typeof data === 'object' &&
+                'units' in data &&
+                !isNaN(parseInt(data.units)) &&
+                parseInt(data.units) >= 0;
         });
-        
+
         if (!isValidUpdate) {
             console.error('❌ Invalid blood stock data:', updatedStock);
-            return res.status(400).json({ 
-                error: 'Invalid blood stock data. Must include all blood groups with non-negative units.' 
+            return res.status(400).json({
+                error: 'Invalid blood stock data. Must include all blood groups with non-negative units.'
             });
         }
-        
+
         // Find the hospital
         const hospital = await Hospital.findById(hospitalId);
         if (!hospital) {
             console.error('❌ Hospital not found:', hospitalId);
             return res.status(404).json({ error: 'Hospital not found' });
         }
-        
+
         // Initialize bloodStock if it doesn't exist
         if (!hospital.bloodStock) {
             hospital.bloodStock = {};
         }
-        
+
         // Prepare the update object with just the numbers (not objects)
         const updateObj = {};
         validBloodGroups.forEach(group => {
@@ -805,28 +902,28 @@ app.put('/api/hospitals/:hospitalId/blood-stock', async (req, res) => {
                 updateObj[`bloodStock.${group}`] = 0; // Default to 0 if not provided
             }
         });
-        
+
         // Update the hospital document directly with the new values
         const updatedHospital = await Hospital.findByIdAndUpdate(
             hospitalId,
             { $set: updateObj },
             { new: true, runValidators: true }
         );
-        
+
         if (!updatedHospital) {
             throw new Error('Failed to update hospital blood stock');
         }
-        
+
         console.log('✅ Blood stock updated successfully for hospital:', hospitalId);
-        
-        res.json({ 
-            message: 'Blood stock updated successfully', 
-            data: updatedHospital.bloodStock 
+
+        res.json({
+            message: 'Blood stock updated successfully',
+            data: updatedHospital.bloodStock
         });
-        
+
     } catch (err) {
         console.error('❌ Error updating blood stock:', err);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to update blood stock',
             details: err.message,
             stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
@@ -856,9 +953,9 @@ app.post('/api/hospital/location/:hospitalId', async (req, res) => {
 
         await hospital.save();
 
-        res.status(200).json({ 
-            message: "Location updated successfully.", 
-            remainingAttempts: hospital.locationUpdateAttempts 
+        res.status(200).json({
+            message: "Location updated successfully.",
+            remainingAttempts: hospital.locationUpdateAttempts
         });
     } catch (err) {
         console.error("❌ Location update error:", err);
@@ -904,6 +1001,189 @@ app.delete('/api/hospital/:id', async (req, res) => {
 });
 
 
+
+
+// -------------------------
+// DONOR DASHBOARD ROUTES (MPA)
+// -------------------------
+app.get('/donor-dashboard/:id/dashboard', async (req, res) => {
+    try {
+        const user = await Donor.findById(req.params.id);
+        if (!user) return res.status(404).send('Donor not found');
+
+        const matchQuery = {
+            status: 'pending',
+            $or: [
+                { bloodGroup: user.bloodGroup, state: user.state },
+                { bloodGroup: 'O-', state: user.state },
+                {
+                    bloodGroup: 'O+', state: user.state, $or: [
+                        { bloodGroup: { $regex: /\+$/, $options: 'i' } },
+                        { bloodGroup: 'AB+' }
+                    ]
+                }
+            ]
+        };
+        const pendingCount = await mongoose.connection.db.collection('demorequests').countDocuments(matchQuery);
+
+        // Calculate Stats
+        const totalDonations = await DemoRequest.countDocuments({
+            donorId: req.params.id,
+            status: { $in: ['accepted', 'completed'] }
+        });
+
+        const lastRequest = await DemoRequest.findOne({
+            donorId: req.params.id,
+            status: { $in: ['accepted', 'completed'] }
+        }).sort({ datetime: -1 });
+
+        const lastDonationDate = user.lastDonation || (lastRequest ? lastRequest.datetime : null);
+
+        // Calculate Next Eligible Date (90 days gap)
+        let nextEligibleDate = null;
+        if (lastDonationDate) {
+            const lastDate = new Date(lastDonationDate);
+            nextEligibleDate = new Date(lastDate);
+            nextEligibleDate.setDate(lastDate.getDate() + 90);
+        }
+
+        // Pass _user as user for compatibility if the view uses _user
+        res.render('donor/dashboard', {
+            user,
+            _user: user,
+            pendingCount,
+            totalDonations,
+            lastDonationDate,
+            nextEligibleDate
+        });
+    } catch (error) {
+        console.error("❌ Donor dashboard error:", error);
+        res.status(500).send('Server error');
+    }
+});
+
+app.get('/donor-dashboard/:id/requests', async (req, res) => {
+    try {
+        const user = await Donor.findById(req.params.id);
+        if (!user) return res.status(404).send('Donor not found');
+
+        const matchQuery = {
+            status: 'pending',
+            $or: [
+                { bloodGroup: user.bloodGroup, state: user.state },
+                { bloodGroup: 'O-', state: user.state },
+                {
+                    bloodGroup: 'O+', state: user.state, $or: [
+                        { bloodGroup: { $regex: /\+$/, $options: 'i' } },
+                        { bloodGroup: 'AB+' }
+                    ]
+                }
+            ]
+        };
+        const pendingCount = await mongoose.connection.db.collection('demorequests').countDocuments(matchQuery);
+
+        // Calculate Eligibility for View
+        const lastRequest = await DemoRequest.findOne({
+            donorId: req.params.id,
+            status: { $in: ['accepted', 'completed'] }
+        }).sort({ datetime: -1 });
+
+        const lastDonationDate = user.lastDonation || (lastRequest ? lastRequest.datetime : null);
+        let nextEligibleDate = null;
+        if (lastDonationDate) {
+            const lastDate = new Date(lastDonationDate);
+            nextEligibleDate = new Date(lastDate);
+            nextEligibleDate.setDate(lastDate.getDate() + 90);
+        }
+
+        res.render('donor/requests', { user, pendingCount, nextEligibleDate });
+    } catch (error) {
+        console.error("❌ Donor requests page error:", error);
+        res.status(500).send('Server error');
+    }
+});
+
+app.get('/donor-dashboard/:id/history', async (req, res) => {
+    try {
+        const user = await Donor.findById(req.params.id);
+        if (!user) return res.status(404).send('Donor not found');
+
+        const matchQuery = {
+            status: 'pending',
+            $or: [
+                { bloodGroup: user.bloodGroup, state: user.state },
+                { bloodGroup: 'O-', state: user.state },
+                {
+                    bloodGroup: 'O+', state: user.state, $or: [
+                        { bloodGroup: { $regex: /\+$/, $options: 'i' } },
+                        { bloodGroup: 'AB+' }
+                    ]
+                }
+            ]
+        };
+        const pendingCount = await mongoose.connection.db.collection('demorequests').countDocuments(matchQuery);
+
+        res.render('donor/history', { user, pendingCount });
+    } catch (error) {
+        console.error("❌ Donor history page error:", error);
+        res.status(500).send('Server error');
+    }
+});
+
+app.get('/donor-dashboard/:id/campaigns', async (req, res) => {
+    try {
+        const user = await Donor.findById(req.params.id);
+        if (!user) return res.status(404).send('Donor not found');
+
+        const matchQuery = {
+            status: 'pending',
+            $or: [
+                { bloodGroup: user.bloodGroup, state: user.state },
+                { bloodGroup: 'O-', state: user.state },
+                {
+                    bloodGroup: 'O+', state: user.state, $or: [
+                        { bloodGroup: { $regex: /\+$/, $options: 'i' } },
+                        { bloodGroup: 'AB+' }
+                    ]
+                }
+            ]
+        };
+        const pendingCount = await mongoose.connection.db.collection('demorequests').countDocuments(matchQuery);
+
+        res.render('donor/campaigns', { user, pendingCount });
+    } catch (error) {
+        console.error("❌ Donor campaigns page error:", error);
+        res.status(500).send('Server error');
+    }
+});
+
+app.get('/donor-dashboard/:id/wellness', async (req, res) => {
+    try {
+        const user = await Donor.findById(req.params.id);
+        if (!user) return res.status(404).send('Donor not found');
+
+        const matchQuery = {
+            status: 'pending',
+            $or: [
+                { bloodGroup: user.bloodGroup, state: user.state },
+                { bloodGroup: 'O-', state: user.state },
+                {
+                    bloodGroup: 'O+', state: user.state, $or: [
+                        { bloodGroup: { $regex: /\+$/, $options: 'i' } },
+                        { bloodGroup: 'AB+' }
+                    ]
+                }
+            ]
+        };
+        const pendingCount = await mongoose.connection.db.collection('demorequests').countDocuments(matchQuery);
+
+        res.render('donor/wellness', { user, pendingCount });
+    } catch (error) {
+        console.error("❌ Donor wellness page error:", error);
+        res.status(500).send('Server error');
+    }
+});
+
 // -------------------------
 // Page Rendering Routes
 // -------------------------
@@ -943,8 +1223,8 @@ app.get("/patient", async (req, res) => {
             console.error(`Patient with id ${patientId} not found`);
             return res.status(404).send('Patient not found');
         }
-    
-        res.render("patient", { 
+
+        res.render("patient", {
             user: user,
             title: 'Patient Dashboard - RaktSetu'
         });
@@ -956,11 +1236,11 @@ app.get("/patient", async (req, res) => {
 
 // Home Page
 app.get("/", (req, res) => {
-  res.render("index"); // Render your main page (index.ejs)
+    res.render("index"); // Render your main page (index.ejs)
 });
 
 app.get("/get-started", (req, res) => {
-  res.render("get-started"); // Render your main page (get-started.ejs)
+    res.render("get-started"); // Render your main page (get-started.ejs)
 });
 
 // ... (rest of the code remains the same)
@@ -968,7 +1248,7 @@ app.get("/get-started", (req, res) => {
 // Server Start
 // -------------------------
 app.listen(PORT, () =>
-  console.log(`🚀 Server running at http://localhost:${PORT}`)
+    console.log(`🚀 Server running at http://localhost:${PORT}`)
 );
 
 // Add this route before the server start
@@ -985,14 +1265,14 @@ app.get('/api/districts/:state', (req, res) => {
 
 app.post('/api/demo-request', async (req, res) => {
     try {
-        const { 
-            patientId, 
+        const {
+            patientId,
             patientName,
             sourceHospitalName, // Patient's name as source
             targetHospitalName,
             hospitalName, // For backward compatibility
-            bloodGroup, 
-            units, 
+            bloodGroup,
+            units,
             requiredBy,
             notes,
             urgency,
@@ -1006,9 +1286,9 @@ app.post('/api/demo-request', async (req, res) => {
         const hospital = targetHospitalName || hospitalName;
 
         if (!patientId || !hospital || !bloodGroup || !units) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Missing required fields' 
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields'
             });
         }
 
@@ -1017,22 +1297,22 @@ app.post('/api/demo-request', async (req, res) => {
             // Patient information
             patientId,
             patientName: patientName || `Patient-${patientId.substring(0, 6)}`,
-            
+
             // Source information (patient's name for patient requests)
             sourceHospitalName: sourceHospitalName || patientName || `Patient-${patientId.substring(0, 6)}}`,
             state: req.body.state || 'Unknown', // Add state field
-            
+
             // Hospital information
             targetHospitalName: hospital,
             hospitalName: hospital, // For backward compatibility
-            
+
             // Blood request details
             bloodGroup: bloodGroup.toUpperCase(),
             units: parseInt(units, 10),
             requiredBy: requiredBy ? new Date(requiredBy) : null,
             notes: notes || '',
             urgency: urgency || 'medium',
-            
+
             // Request metadata
             requestType,
             status,
@@ -1042,7 +1322,7 @@ app.post('/api/demo-request', async (req, res) => {
         });
 
         await newRequest.save();
-        
+
         res.status(201).json({
             success: true,
             message: 'Blood request submitted successfully',
@@ -1062,7 +1342,7 @@ app.post('/api/demo-request', async (req, res) => {
 app.get('/api/demo-request/patient/:patientId', async (req, res) => {
     try {
         const reqs = await DemoRequest.find({ patientId: req.params.patientId })
-                                      .sort({ datetime: -1 });
+            .sort({ datetime: -1 });
         res.json(reqs);
     } catch (error) {
         console.error("Demo request fetch error:", error);
@@ -1075,25 +1355,25 @@ app.get('/api/demo-requests', async (req, res) => {
     try {
         const { targetHospitalName } = req.query;
         const query = {};
-        
+
         // If targetHospitalName is provided, filter by it (case-insensitive)
         if (targetHospitalName) {
-            query.targetHospitalName = { 
-                $regex: new RegExp('^' + targetHospitalName + '$', 'i') 
+            query.targetHospitalName = {
+                $regex: new RegExp('^' + targetHospitalName + '$', 'i')
             };
         }
-        
+
         const requests = await DemoRequest.find(query)
             .select('sourceHospitalId sourceHospitalName targetHospitalId targetHospitalName bloodGroup units datetime status requestType contactPerson contactNumber priority notes')
             .sort({ datetime: -1 });
-            
+
         res.json(requests);
     } catch (error) {
         console.error('Error fetching demo requests:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Failed to fetch demo requests',
-            error: error.message 
+            error: error.message
         });
     }
 });
@@ -1101,19 +1381,80 @@ app.get('/api/demo-requests', async (req, res) => {
 // Get demo requests for a specific hospital (by ID)
 app.get('/api/demo-request/hospital/:hospitalId', async (req, res) => {
     try {
-        const requests = await DemoRequest.find({ 
+        const requests = await DemoRequest.find({
             hospitalId: req.params.hospitalId,
             requestType: 'hospital'  // Only get hospital-type requests
         }).sort({ datetime: -1 });
-        
+
         res.json(requests);
     } catch (error) {
         console.error('Error fetching hospital requests:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Failed to fetch hospital requests',
-            error: error.message 
+            error: error.message
         });
+    }
+});
+
+// Update DemoRequest status (Accept/Decline)
+app.put('/api/demo-request/:id/status', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!['accepted', 'declined', 'pending', 'completed'].includes(status)) {
+            return res.status(400).json({ success: false, message: 'Invalid status' });
+        }
+
+        const request = await DemoRequest.findById(id);
+        if (!request) {
+            return res.status(404).json({ success: false, message: 'Request not found' });
+        }
+
+        request.status = status;
+
+        // If accepting, assign the donor
+        if (status === 'accepted' && req.body.donorId) {
+            // 1. Check Eligibility Server-Side
+            const donor = await Donor.findById(req.body.donorId);
+            if (!donor) {
+                return res.status(404).json({ success: false, message: 'Donor not found' });
+            }
+
+            const lastAcceptedRequest = await DemoRequest.findOne({
+                donorId: donor._id,
+                status: { $in: ['accepted', 'completed'] }
+            }).sort({ datetime: -1 });
+
+            const lastDonationDate = donor.lastDonation || (lastAcceptedRequest ? lastAcceptedRequest.datetime : null);
+
+            if (lastDonationDate) {
+                const nextEligibleDate = new Date(lastDonationDate);
+                nextEligibleDate.setDate(nextEligibleDate.getDate() + 90);
+
+                if (new Date() < nextEligibleDate) {
+                    return res.status(403).json({
+                        success: false,
+                        message: `You are not eligible to donate yet. Next eligible date: ${nextEligibleDate.toLocaleDateString('en-IN')}`
+                    });
+                }
+            }
+
+            request.donorId = req.body.donorId;
+            // Also update donor name if provided, or fetch it (optional)
+            if (req.body.donorName) {
+                request.donorName = req.body.donorName;
+            }
+        }
+
+        await request.save();
+
+        console.log(`✅ DemoRequest ${id} status updated to: ${status} by donor ${req.body.donorId || 'unknown'}`);
+        res.json({ success: true, message: `Request ${status} successfully`, request });
+    } catch (error) {
+        console.error('Error updating demo request status:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 });
 
@@ -1121,24 +1462,24 @@ app.get('/api/demo-request/hospital/:hospitalId', async (req, res) => {
 // API endpoint for hospitals to request blood
 app.post('/api/request/hospital-blood', async (req, res) => {
     try {
-        const { 
+        const {
             sourceHospitalId,
             sourceHospitalName,
             targetHospitalId,
             targetHospitalName,
-            bloodGroup, 
-            units, 
-            contactPerson, 
-            contactNumber, 
+            bloodGroup,
+            units,
+            contactPerson,
+            contactNumber,
             priority,
-            notes 
+            notes
         } = req.body;
 
-        if (!sourceHospitalId || !sourceHospitalName || !targetHospitalId || !targetHospitalName || 
+        if (!sourceHospitalId || !sourceHospitalName || !targetHospitalId || !targetHospitalName ||
             !bloodGroup || !units || !contactPerson || !contactNumber) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Missing required fields' 
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields'
             });
         }
 
@@ -1175,10 +1516,10 @@ app.post('/api/request/hospital-blood', async (req, res) => {
 
     } catch (error) {
         console.error('Error creating hospital blood request:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Server error while processing blood request',
-            error: error.message 
+            error: error.message
         });
     }
 });
@@ -1186,15 +1527,15 @@ app.post('/api/request/hospital-blood', async (req, res) => {
 // Handle donor requests from patients
 app.post('/api/request/donor', async (req, res) => {
     try {
-        const { 
-            patientId, 
+        const {
+            patientId,
             patientName,
             sourceHospitalName, // Patient's name
             state,              // Patient's state
-            donorId, 
+            donorId,
             donorName,
             targetHospitalName, // Donor's name
-            bloodGroup, 
+            bloodGroup,
             units,
             requestType = 'donor',
             status = 'pending',
@@ -1212,16 +1553,16 @@ app.post('/api/request/donor', async (req, res) => {
             // Patient information
             patientId,
             patientName: patientName || `Patient-${patientId.substring(0, 6)}`,
-            
+
             // Source information (patient making the request)
             sourceHospitalName: sourceHospitalName || patientName || `Patient-${patientId.substring(0, 6)}`,
             state: state || 'Unknown',
-            
+
             // Target information (donor)
             donorId,
             donorName,
             targetHospitalName: targetHospitalName || donorName,
-            
+
             // Request details
             bloodGroup: bloodGroup.toUpperCase(),
             units: parseInt(units) || 1,
@@ -1245,6 +1586,25 @@ app.post('/api/request/donor', async (req, res) => {
     }
 });
 
+// Get requests accepted by a specific donor
+app.get('/api/demo-request/donor/:donorId/accepted', async (req, res) => {
+    try {
+        const requests = await DemoRequest.find({
+            donorId: req.params.donorId,
+            status: { $in: ['accepted', 'completed', 'delivering'] }
+        }).sort({ datetime: -1 });
+
+        res.json(requests);
+    } catch (error) {
+        console.error('Error fetching accepted requests:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch accepted requests',
+            error: error.message
+        });
+    }
+});
+
 // Return donors for a given state (all donors, with available ones first)
 app.get('/api/donors/state/:state', async (req, res) => {
     try {
@@ -1252,17 +1612,17 @@ app.get('/api/donors/state/:state', async (req, res) => {
         if (!state) return res.status(400).send('State is required');
 
         console.log(`🔍 Fetching donors for state: ${state}`);
-        
+
         const donors = await Donor.find({ state: state })
             .select('fullName bloodGroup city state contactInfo lastDonation availabilityStatus')
-            .sort({ 
+            .sort({
                 availabilityStatus: -1, // Available donors first
                 lastDonation: -1        // Then sort by most recent donation date
             })
             .lean();
 
         console.log(`✅ Found ${donors.length} donors in ${state}`);
-        
+
         // Log the first few donors for debugging
         if (donors.length > 0) {
             console.log('Sample donors:', donors.slice(0, 3).map(d => ({
@@ -1271,7 +1631,7 @@ app.get('/api/donors/state/:state', async (req, res) => {
                 lastDonation: d.lastDonation
             })));
         }
-        
+
         res.json(donors);
     } catch (err) {
         console.error('❌ Error fetching donors by state:', err);
